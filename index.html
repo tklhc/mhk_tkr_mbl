@@ -786,8 +786,16 @@ function NIT({ label, value, onChange, min, max, step = 1, unit = "mm", tolVal, 
 
 function Panel({ params, setParams, isMobile, showPanel, onClose }) {
   const u = useCallback((k, v) => setParams((p) => ({ ...p, [k]: v })), [setParams]);
+  const [openSec, setOpenSec] = useState({ geo: true, cool: false, show: false, col: false, doc: false, tpl: false, step: true });
+  const togSec = useCallback((k) => setOpenSec((s) => ({ ...s, [k]: !s[k] })), []);
   const sec = { marginBottom: 10, paddingBottom: 6, borderBottom: "1px solid #1e293b" };
   const secT = { fontSize: 9.5, fontWeight: 700, color: "#f97316", textTransform: "uppercase", letterSpacing: 1.5, marginBottom: 6, fontFamily: "'IBM Plex Mono', monospace" };
+  const secTog = (label, key) => (
+    <div onClick={() => togSec(key)} style={{ ...secT, cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center", userSelect: "none", marginBottom: openSec[key] ? 6 : 0 }}>
+      <span>{label}</span>
+      <span style={{ fontSize: 12, transition: "transform 0.2s", transform: openSec[key] ? "rotate(90deg)" : "rotate(0deg)" }}>▶</span>
+    </div>
+  );
   const txS = {
     width: "100%", background: "#0f172a", border: "1px solid #334155", borderRadius: 4,
     padding: "3px 6px", color: "#e2e8f0", fontSize: 11,
@@ -858,7 +866,8 @@ function Panel({ params, setParams, isMobile, showPanel, onClose }) {
       </div>
 
       <div style={sec}>
-        <div style={secT}>Geometri</div>
+        {secTog("Geometri", "geo")}
+        {openSec.geo && (<div>
         <NI label="Diş Sayısı (z)" value={params.z} onChange={(v) => u("z", v)} min={1} max={16} unit="Z" />
         <NI label="Helis Açısı" value={params.helix} onChange={(v) => u("helix", v)} min={0} max={60} unit="°" />
         <NI label="Çekirdek (dc)" value={params.dCore} onChange={(v) => u("dCore", v)} min={0} max={params.D} step={0.1} />
@@ -885,12 +894,14 @@ function Panel({ params, setParams, isMobile, showPanel, onClose }) {
         </div>
         {params.toolType === "bullnose" && <NI label="Köşe R" value={params.rCorner} onChange={(v) => u("rCorner", v)} min={0} max={params.D / 2} step={0.1} />}
         {params.toolType === "chamfer" && <NI label="Pah Boyu" value={params.chamferSize} onChange={(v) => u("chamferSize", v)} min={0} max={params.D / 2} step={0.1} />}
+        </div>)}
       </div>
 
       {/* ── Step Drill Kademe Yönetimi ── */}
       {params.toolType === "stepdrill" && (
         <div style={sec}>
-          <div style={secT}>Kademeler</div>
+          {secTog("Kademeler", "step")}
+          {openSec.step && (<div>
           {(params.steps || []).map((st, idx) => (
             <div key={idx} style={{ marginBottom: 8, padding: 6, background: "#0f172a", borderRadius: 4, border: "1px solid #1e293b" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
@@ -957,20 +968,24 @@ function Panel({ params, setParams, isMobile, showPanel, onClose }) {
             padding: "4px 0", color: "#f97316", fontSize: 10, cursor: "pointer",
             fontFamily: "'IBM Plex Mono', monospace", fontWeight: 600,
           }}>+ Kademe Ekle</button>
+          </div>)}
         </div>
       )}
 
       <div style={sec}>
-        <div style={secT}>Soğutma</div>
+        {secTog("Soğutma", "cool")}
+        {openSec.cool && (<div>
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
           <label style={{ fontSize: 11, color: "#94a3b8", fontFamily: "'IBM Plex Mono', monospace" }}>Soğutma Deliği</label>
           <input type="checkbox" checked={params.coolantHole} onChange={(e) => u("coolantHole", e.target.checked)} style={{ accentColor: "#f97316" }} />
         </div>
         {params.coolantHole && <NI label="Delik Sayısı" value={params.coolantCount} onChange={(v) => u("coolantCount", v)} min={1} max={8} unit="ad" />}
+        </div>)}
       </div>
 
       <div style={sec}>
-        <div style={secT}>Resimde Göster</div>
+        {secTog("Resimde Göster", "show")}
+        {openSec.show && (<div>
         {[
           ["showDimD", "⌀D Kesici Çap"],
           ["showDimd", "⌀d Sap Çapı"],
@@ -987,10 +1002,12 @@ function Panel({ params, setParams, isMobile, showPanel, onClose }) {
               onClick={() => u(key, !params[key])}>{label}</label>
           </div>
         ))}
+        </div>)}
       </div>
 
       <div style={sec}>
-        <div style={secT}>Renkler</div>
+        {secTog("Renkler", "col")}
+        {openSec.col && (<div>
         {[
           ["colShank", "Sap"],
           ["colNeck", "Boğaz"],
@@ -1027,10 +1044,12 @@ function Panel({ params, setParams, isMobile, showPanel, onClose }) {
             </button>
           ))}
         </div>
+        </div>)}
       </div>
 
       <div style={sec}>
-        <div style={secT}>Doküman Bilgileri</div>
+        {secTog("Doküman Bilgileri", "doc")}
+        {openSec.doc && (<div>
         <div style={{ marginBottom: 3 }}>
           <label style={{ fontSize: 10, color: "#94a3b8", display: "block", marginBottom: 2, fontFamily: "'IBM Plex Mono', monospace" }}>Alet Adı</label>
           <input type="text" value={params.toolName} onChange={(e) => u("toolName", e.target.value)} style={txS} />
@@ -1059,11 +1078,12 @@ function Panel({ params, setParams, isMobile, showPanel, onClose }) {
           <label style={{ fontSize: 10, color: "#94a3b8", display: "block", marginBottom: 2, fontFamily: "'IBM Plex Mono', monospace" }}>Oluşturan</label>
           <input type="text" value={params.createdBy} onChange={(e) => u("createdBy", e.target.value)} style={txS} />
         </div>
+        </div>)}
       </div>
 
       <div>
-        <div style={secT}>Hızlı Şablonlar</div>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 3 }}>
+        {secTog("Hızlı Şablonlar", "tpl")}
+        {openSec.tpl && (<div style={{ display: "flex", flexWrap: "wrap", gap: 3 }}>
           {[
             { label: "⌀6 Kısa", p: { D: 6, d: 6, L: 50, l1: 15, l2: 0, z: 4, helix: 30, dCore: 3.6, toolType: "flat", rCorner: 0, chamferSize: 0, toolName: "MHK-E6x50-4Z", tolD: "h6", told: "h6", toll1: "±0.05", tolL: "", toll2: "", tolNeck: "" } },
             { label: "⌀10 Boğaz", p: { D: 10, d: 10, L: 100, l1: 30, l2: 12, z: 4, helix: 30, dCore: 6, neckDia: 8.5, neckAngle: 45, toolType: "flat", rCorner: 0, chamferSize: 0, toolName: "MHK-E10x100-4Z-N", tolD: "h6", told: "h6", toll1: "±0.05", tolL: "", toll2: "", tolNeck: "" } },
@@ -1094,7 +1114,7 @@ function Panel({ params, setParams, isMobile, showPanel, onClose }) {
               {pr.label}
             </button>
           ))}
-        </div>
+        </div>)}
       </div>
     </div>
   );
