@@ -554,6 +554,21 @@ function EndView({ params, cx, cy, R }) {
   // Outer circle border
   e.push(<circle key="out" cx={cx} cy={cy} r={R} fill="none" stroke={DS.outline} strokeWidth={DS.oW * 2} />);
 
+  // Coolant holes (on top of photo)
+  if (coolantHole && coolantCount > 0) {
+    const coolR = R * 0.1;
+    const coolDist = R * 0.55;
+    for (let i = 0; i < coolantCount; i++) {
+      const a = (i * 2 * Math.PI) / coolantCount - Math.PI / 2;
+      e.push(
+        <circle key={`clbg-${i}`} cx={cx + coolDist * Math.cos(a)} cy={cy + coolDist * Math.sin(a)} r={coolR + 0.5}
+          fill="rgba(0,0,0,0.4)" stroke="none" />,
+        <circle key={`cl-${i}`} cx={cx + coolDist * Math.cos(a)} cy={cy + coolDist * Math.sin(a)} r={coolR}
+          fill="#b8dce8" stroke={DS.outline} strokeWidth={DS.oW * 1.5} />
+      );
+    }
+  }
+
   // Center marks
   e.push(
     <CL key="ch" x1={cx - R - 5} y1={cy} x2={cx + R + 5} y2={cy} />,
