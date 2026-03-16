@@ -4,13 +4,47 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>MİHENK Teknik Resim - Kesici Takım Çizim Sistemi</title>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Rajdhani:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&family=Syne:wght@700;800&display=swap" rel="stylesheet">
 <style>
+:root {
+  --bg-base:       #080d14;
+  --bg-panel:      #0c1220;
+  --bg-surface:    #111a2b;
+  --bg-raised:     #0f1926;
+  --bg-input:      #080e18;
+  --border-dim:    #151f30;
+  --border-mid:    #1e2e45;
+  --border-hi:     #2a4060;
+  --accent:        #e8922a;
+  --accent-dim:    #b36a18;
+  --accent2:       #3a8fd4;
+  --text-hi:       #d4dce8;
+  --text-mid:      #6e88a4;
+  --text-lo:       #354a60;
+  --text-label:    #3d5570;
+  --red:           #cc4444;
+  --green:         #2d8a58;
+  --mono:          'JetBrains Mono','IBM Plex Mono',monospace;
+  --display:       'Rajdhani','Syne',sans-serif;
+  --panel-w:       288px;
+}
 * { margin: 0; padding: 0; box-sizing: border-box; }
-body { overflow: hidden; -webkit-overflow-scrolling: touch; }
-input, select, button { font-size: 16px; } /* Prevent iOS zoom */
-@media (min-width: 900px) {
-  input, select, button { font-size: inherit; }
+body { overflow: hidden; -webkit-overflow-scrolling: touch; background: var(--bg-base); }
+input, select, button { font-size: 16px; }
+@media (min-width: 900px) { input, select, button { font-size: inherit; } }
+::-webkit-scrollbar { width: 3px; }
+::-webkit-scrollbar-track { background: var(--bg-panel); }
+::-webkit-scrollbar-thumb { background: var(--border-hi); border-radius: 2px; }
+input:focus, select:focus { outline: none; border-color: var(--accent) !important; box-shadow: 0 0 0 1px rgba(232,146,42,0.12) !important; }
+input[type=number]::-webkit-inner-spin-button { opacity: 0.3; }
+.cad-area {
+  background-color: #f7f9fb;
+  background-image:
+    linear-gradient(rgba(160,185,210,0.30) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(160,185,210,0.30) 1px, transparent 1px),
+    linear-gradient(rgba(160,185,210,0.10) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(160,185,210,0.10) 1px, transparent 1px);
+  background-size: 50px 50px, 50px 50px, 10px 10px, 10px 10px;
 }
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
@@ -814,16 +848,16 @@ function BottomBlock({ params, x, y, w, scaleText }) {
 function NI({ label, value, onChange, min, max, step = 1, unit = "mm", disabled }) {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 4 }}>
-      <label style={{ width: 105, fontSize: 11.5, color: "#94a3b8", flexShrink: 0, fontFamily: "'IBM Plex Mono', monospace" }}>{label}</label>
+      <label style={{ width: 100, fontSize: 10.5, color: "var(--text-mid)", flexShrink: 0, fontFamily: "var(--mono)" }}>{label}</label>
       <input type="number" value={value} onChange={(e) => onChange(parseFloat(e.target.value) || 0)}
         min={min} max={max} step={step} disabled={disabled}
         style={{
-          flex: 1, maxWidth: 72, background: disabled ? "#1e293b" : "#0f172a",
-          border: "1px solid #334155", borderRadius: 4, padding: "3px 6px",
-          color: disabled ? "#475569" : "#e2e8f0", fontSize: 12,
-          fontFamily: "'IBM Plex Mono', monospace", outline: "none",
+          flex: 1, maxWidth: 68, background: disabled ? "var(--bg-surface)" : "var(--bg-input)",
+          border: "1px solid var(--border-mid)", borderRadius: 3, padding: "3px 6px",
+          color: disabled ? "var(--text-lo)" : "var(--text-hi)", fontSize: 11.5,
+          fontFamily: "var(--mono)",
         }} />
-      <span style={{ fontSize: 10, color: "#64748b", width: 20, fontFamily: "'IBM Plex Mono', monospace" }}>{unit}</span>
+      <span style={{ fontSize: 9, color: "var(--text-label)", width: 20, fontFamily: "var(--mono)" }}>{unit}</span>
     </div>
   );
 }
@@ -833,9 +867,9 @@ function TolInput({ value, onChange }) {
     <input type="text" value={value} onChange={(e) => onChange(e.target.value)}
       placeholder="h6, ±0.01"
       style={{
-        width: 62, background: "#0f172a", border: "1px solid #334155", borderRadius: 3,
-        padding: "2px 4px", color: "#f87171", fontSize: 10.5,
-        fontFamily: "'IBM Plex Mono', monospace", outline: "none",
+        width: 60, background: "var(--bg-input)", border: "1px solid var(--border-mid)", borderRadius: 3,
+        padding: "2px 4px", color: "#d07070", fontSize: 10,
+        fontFamily: "var(--mono)",
       }} />
   );
 }
@@ -843,16 +877,16 @@ function TolInput({ value, onChange }) {
 function NIT({ label, value, onChange, min, max, step = 1, unit = "mm", tolVal, onTolChange }) {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: 4 }}>
-      <label style={{ width: 85, fontSize: 11, color: "#94a3b8", flexShrink: 0, fontFamily: "'IBM Plex Mono', monospace" }}>{label}</label>
+      <label style={{ width: 82, fontSize: 10.5, color: "var(--text-mid)", flexShrink: 0, fontFamily: "var(--mono)" }}>{label}</label>
       <input type="number" value={value} onChange={(e) => onChange(parseFloat(e.target.value) || 0)}
         min={min} max={max} step={step}
         style={{
-          flex: 1, maxWidth: 60, background: "#0f172a",
-          border: "1px solid #334155", borderRadius: 4, padding: "3px 5px",
-          color: "#e2e8f0", fontSize: 12,
-          fontFamily: "'IBM Plex Mono', monospace", outline: "none",
+          flex: 1, maxWidth: 58, background: "var(--bg-input)",
+          border: "1px solid var(--border-mid)", borderRadius: 3, padding: "3px 5px",
+          color: "var(--text-hi)", fontSize: 11.5,
+          fontFamily: "var(--mono)",
         }} />
-      <span style={{ fontSize: 9.5, color: "#64748b", width: 16, fontFamily: "'IBM Plex Mono', monospace" }}>{unit}</span>
+      <span style={{ fontSize: 9, color: "var(--text-label)", width: 16, fontFamily: "var(--mono)" }}>{unit}</span>
       {onTolChange && <TolInput value={tolVal || ""} onChange={onTolChange} />}
     </div>
   );
@@ -862,334 +896,283 @@ function Panel({ params, setParams, isMobile, showPanel, onClose }) {
   const u = useCallback((k, v) => setParams((p) => ({ ...p, [k]: v })), [setParams]);
   const [openSec, setOpenSec] = useState({ geo: true, cool: false, show: false, col: false, doc: false, tpl: false, step: true });
   const togSec = useCallback((k) => setOpenSec((s) => ({ ...s, [k]: !s[k] })), []);
-  const sec = { marginBottom: 10, paddingBottom: 6, borderBottom: "1px solid #1e293b" };
-  const secT = { fontSize: 9.5, fontWeight: 700, color: "#f97316", textTransform: "uppercase", letterSpacing: 1.5, marginBottom: 6, fontFamily: "'IBM Plex Mono', monospace" };
-  const secTog = (label, key) => (
-    <div onClick={() => togSec(key)} style={{ ...secT, cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center", userSelect: "none", marginBottom: openSec[key] ? 6 : 0 }}>
-      <span>{label}</span>
-      <span style={{ fontSize: 12, transition: "transform 0.2s", transform: openSec[key] ? "rotate(90deg)" : "rotate(0deg)" }}>▶</span>
-    </div>
-  );
-  const txS = {
-    width: "100%", background: "#0f172a", border: "1px solid #334155", borderRadius: 4,
-    padding: "3px 6px", color: "#e2e8f0", fontSize: 11,
-    fontFamily: "'IBM Plex Mono', monospace", outline: "none", boxSizing: "border-box",
+
+  const SH = (label, key, icon = "▸") => {
+    const open = openSec[key];
+    return (
+      <div onClick={() => togSec(key)} style={{
+        display: "flex", justifyContent: "space-between", alignItems: "center",
+        padding: "6px 12px 6px 10px", cursor: "pointer", userSelect: "none",
+        background: open ? "var(--bg-raised)" : "transparent",
+        borderLeft: open ? "2px solid var(--accent)" : "2px solid transparent",
+        borderBottom: "1px solid var(--border-dim)",
+        transition: "background 0.12s",
+      }}
+        onMouseOver={(e) => { if (!open) e.currentTarget.style.background = "rgba(255,255,255,0.025)"; }}
+        onMouseOut={(e) => { if (!open) e.currentTarget.style.background = "transparent"; }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <span style={{ fontSize: 9, color: open ? "var(--accent)" : "var(--text-lo)", fontFamily: "var(--mono)" }}>{icon}</span>
+          <span style={{
+            fontSize: 8.5, fontWeight: 700,
+            color: open ? "var(--accent)" : "var(--text-mid)",
+            textTransform: "uppercase", letterSpacing: 2, fontFamily: "var(--mono)",
+          }}>{label}</span>
+        </div>
+        <span style={{
+          fontSize: 7, color: open ? "var(--accent)" : "var(--text-lo)",
+          transform: open ? "rotate(90deg)" : "rotate(0deg)",
+          display: "inline-block", transition: "transform 0.18s",
+        }}>▶</span>
+      </div>
+    );
   };
+
+  const SB = { padding: "9px 12px 11px 14px", background: "var(--bg-raised)", borderLeft: "2px solid var(--accent)", borderBottom: "1px solid var(--border-dim)" };
+  const INP = { width: "100%", background: "var(--bg-input)", border: "1px solid var(--border-mid)", borderRadius: 3, padding: "4px 7px", color: "var(--text-hi)", fontSize: 11, fontFamily: "var(--mono)", boxSizing: "border-box" };
+  const LBL = { fontSize: 8, color: "var(--text-label)", display: "block", marginBottom: 3, fontFamily: "var(--mono)", textTransform: "uppercase", letterSpacing: 1.5 };
 
   return (
     <div style={{
-      width: isMobile ? "85vw" : 300,
-      maxWidth: isMobile ? 360 : 300,
-      background: "#0b1120",
-      borderRight: "1px solid #1e293b",
-      padding: "10px 12px",
-      overflowY: "auto",
+      width: isMobile ? "85vw" : "var(--panel-w)",
+      maxWidth: isMobile ? 360 : "var(--panel-w)",
+      background: "var(--bg-panel)",
+      borderRight: "1px solid var(--border-mid)",
       height: "100vh",
+      display: "flex",
+      flexDirection: "column",
+      flexShrink: 0,
       ...(isMobile ? {
         position: "fixed", left: showPanel ? 0 : "-100%", top: 0,
-        zIndex: 1000, transition: "left 0.3s ease",
-        boxShadow: showPanel ? "4px 0 24px rgba(0,0,0,0.7)" : "none",
+        zIndex: 1000, transition: "left 0.26s cubic-bezier(0.4,0,0.2,1)",
+        boxShadow: showPanel ? "8px 0 40px rgba(0,0,0,0.85)" : "none",
       } : {}),
     }}>
-      {isMobile && (
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-          <span style={{ fontSize: 14, fontWeight: 700, color: "#f97316" }}>MİHENK Teknik Resim</span>
-          <button onClick={onClose} style={{
-            background: "#dc2626", border: "none", borderRadius: 4, padding: "4px 10px",
-            color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer",
-          }}>✕</button>
-        </div>
-      )}
-      <h1 style={{ fontSize: 14, fontWeight: 800, color: "#f8fafc", margin: "0 0 2px 0", fontFamily: "'Syne', sans-serif" }}>MİHENK Teknik Resim</h1>
-      <p style={{ fontSize: 10, color: "#475569", margin: "0 0 12px 0", fontFamily: "'IBM Plex Mono', monospace" }}>Kesici Takım Çizim v2.0</p>
 
-      <div style={sec}>
-        <div style={secT}>Takım Tipi</div>
+      {/* ── HEADER ── */}
+      <div style={{ background: "var(--bg-base)", borderBottom: "1px solid var(--border-mid)", flexShrink: 0 }}>
+        {/* Accent stripe */}
+        <div style={{ height: 2, background: "linear-gradient(90deg,var(--accent) 0%,var(--accent2) 55%,transparent 100%)" }} />
+        <div style={{ padding: "10px 14px 9px" }}>
+          {isMobile && (
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+              <span style={{ fontSize: 10, fontWeight: 700, color: "var(--accent)", fontFamily: "var(--mono)", letterSpacing: 2 }}>MİHENK</span>
+              <button onClick={onClose} style={{ background: "transparent", border: "1px solid var(--border-hi)", borderRadius: 3, padding: "2px 8px", color: "var(--text-mid)", fontSize: 12, cursor: "pointer" }}>✕</button>
+            </div>
+          )}
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 7 }}>
+            <img src={LOGO_IMG} style={{ width: 36, height: 14, objectFit: "contain", opacity: 0.9 }} alt="MİHENK" />
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-hi)", letterSpacing: 2, fontFamily: "var(--display)", lineHeight: 1 }}>TEKNİK RESİM</div>
+              <div style={{ fontSize: 7.5, color: "var(--accent)", fontFamily: "var(--mono)", letterSpacing: 2.5, marginTop: 2, opacity: 0.85 }}>KESİCİ TAKIM SİSTEMİ</div>
+            </div>
+          </div>
+          <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
+            <span style={{ fontSize: 7.5, fontFamily: "var(--mono)", color: "var(--text-lo)", background: "var(--bg-surface)", border: "1px solid var(--border-dim)", borderRadius: 2, padding: "1px 6px", letterSpacing: 1 }}>v2.0</span>
+            <span style={{ fontSize: 7.5, fontFamily: "var(--mono)", color: "var(--accent2)", background: "rgba(58,143,212,0.06)", border: "1px solid rgba(58,143,212,0.20)", borderRadius: 2, padding: "1px 6px", letterSpacing: 0.8 }}>⌀{params.D}×{params.L}mm · {params.z}Z</span>
+          </div>
+        </div>
+      </div>
+
+      {/* ── TAKIM TİPİ (always visible) ── */}
+      <div style={{ padding: "8px 12px", background: "var(--bg-surface)", borderBottom: "1px solid var(--border-mid)", flexShrink: 0 }}>
+        <div style={{ fontSize: 8, fontWeight: 700, color: "var(--text-label)", textTransform: "uppercase", letterSpacing: 2, marginBottom: 5, fontFamily: "var(--mono)" }}>▸ TAKIM TİPİ</div>
         <select value={params.toolType} onChange={(e) => u("toolType", e.target.value)}
-          style={{ width: "100%", background: "#0f172a", border: "1px solid #334155", borderRadius: 4, padding: "4px 6px", color: "#e2e8f0", fontSize: 12, fontFamily: "'IBM Plex Mono', monospace", outline: "none" }}>
+          style={{ ...INP, fontSize: 11.5, padding: "5px 8px", fontWeight: 600, color: "var(--accent)" }}>
           {Object.entries(TOOL_TYPES).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
         </select>
       </div>
 
-      <div style={sec}>
-        <div style={secT}>Ana Boyutlar <span style={{ color: "#64748b", fontWeight: 400, fontSize: 8, textTransform: "none" }}>+ Tolerans</span></div>
-        {params.toolType !== "stepdrill" && (
-          <NIT label="Çap (D)" value={params.D} onChange={(v) => u("D", v)} min={0.5} max={100} step={0.5} tolVal={params.tolD} onTolChange={(v) => u("tolD", v)} />
-        )}
-        <NIT label="Sap Çapı (d)" value={params.d} onChange={(v) => u("d", v)} min={0.5} max={100} step={0.5} tolVal={params.told} onTolChange={(v) => u("told", v)} />
-        <NIT label="Toplam Boy" value={params.L} onChange={(v) => u("L", v)} min={5} max={500} tolVal={params.tolL} onTolChange={(v) => u("tolL", v)} />
-        {params.toolType !== "stepdrill" && (
-          <NIT label="Kesici Boy" value={params.l1} onChange={(v) => u("l1", v)} min={1} max={300} step={0.5} tolVal={params.toll1} onTolChange={(v) => u("toll1", v)} />
-        )}
-        {params.toolType !== "stepdrill" && (
-          <>
-            <NIT label="Boğaz Boyu (l₂)" value={params.l2} onChange={(v) => u("l2", v)} min={0} max={200} step={0.5} tolVal={params.toll2} onTolChange={(v) => u("toll2", v)} />
-            {params.l2 > 0 && (
-              <NIT label="Boğaz Çapı" value={params.neckDia} onChange={(v) => u("neckDia", v)} min={0.5} max={params.d} step={0.1} tolVal={params.tolNeck} onTolChange={(v) => u("tolNeck", v)} />
-            )}
-            {params.l2 > 0 && (
-              <NI label="Geçiş Açısı" value={params.neckAngle} onChange={(v) => u("neckAngle", v)} min={10} max={90} step={5} unit="°" />
-            )}
-          </>
-        )}
-        {params.toolType === "stepdrill" && (
-          <div style={{ fontSize: 10, color: "#64748b", fontStyle: "italic", fontFamily: "'IBM Plex Mono', monospace", marginTop: 4 }}>
-            Kesici boy ve çaplar kademelerden hesaplanır
-          </div>
-        )}
-      </div>
+      {/* ── SCROLLABLE BODY ── */}
+      <div style={{ flex: 1, overflowY: "auto" }}>
 
-      <div style={sec}>
-        {secTog("Geometri", "geo")}
-        {openSec.geo && (<div>
-        <NI label="Diş Sayısı (z)" value={params.z} onChange={(v) => u("z", v)} min={1} max={16} unit="Z" />
-        <NI label="Helis Açısı" value={params.helix} onChange={(v) => u("helix", v)} min={0} max={60} unit="°" />
-        <NI label="Çekirdek (dc)" value={params.dCore} onChange={(v) => u("dCore", v)} min={0} max={params.D} step={0.1} />
-        {(params.toolType === "drill") && (
-          <NI label="Uç Açısı" value={params.pointAngle} onChange={(v) => u("pointAngle", v)} min={60} max={180} step={1} unit="°" />
-        )}
-        <div style={{ display: "flex", gap: 6, marginBottom: 4 }}>
-          <div style={{ flex: 1 }}>
-            <label style={{ fontSize: 10, color: "#94a3b8", display: "block", marginBottom: 2, fontFamily: "'IBM Plex Mono', monospace" }}>Helis Yönü</label>
-            <select value={params.helixHand} onChange={(e) => u("helixHand", e.target.value)}
-              style={{ ...txS, fontSize: 11, padding: "3px 4px" }}>
-              <option value="Sağ">Sağ</option>
-              <option value="Sol">Sol</option>
-            </select>
+        {/* ANA BOYUTLAR */}
+        <div style={{ borderBottom: "1px solid var(--border-dim)" }}>
+          <div style={{ padding: "5px 12px 5px 12px", background: "var(--bg-surface)", borderBottom: "1px solid var(--border-dim)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <span style={{ fontSize: 8.5, fontWeight: 700, color: "var(--text-label)", textTransform: "uppercase", letterSpacing: 2, fontFamily: "var(--mono)" }}>▸ ANA BOYUTLAR</span>
+            <span style={{ fontSize: 7.5, color: "var(--text-lo)", fontFamily: "var(--mono)", letterSpacing: 1 }}>+ TOLERANS</span>
           </div>
-          <div style={{ flex: 1 }}>
-            <label style={{ fontSize: 10, color: "#94a3b8", display: "block", marginBottom: 2, fontFamily: "'IBM Plex Mono', monospace" }}>Kesim Yönü</label>
-            <select value={params.cutDir} onChange={(e) => u("cutDir", e.target.value)}
-              style={{ ...txS, fontSize: 11, padding: "3px 4px" }}>
-              <option value="Sağ">Sağ</option>
-              <option value="Sol">Sol</option>
-            </select>
+          <div style={SB}>
+            {params.toolType !== "stepdrill" && (
+              <NIT label="Çap (D)" value={params.D} onChange={(v) => u("D", v)} min={0.5} max={100} step={0.5} tolVal={params.tolD} onTolChange={(v) => u("tolD", v)} />
+            )}
+            <NIT label="Sap Çapı (d)" value={params.d} onChange={(v) => u("d", v)} min={0.5} max={100} step={0.5} tolVal={params.told} onTolChange={(v) => u("told", v)} />
+            <NIT label="Toplam Boy" value={params.L} onChange={(v) => u("L", v)} min={5} max={500} tolVal={params.tolL} onTolChange={(v) => u("tolL", v)} />
+            {params.toolType !== "stepdrill" && (
+              <NIT label="Kesici Boy" value={params.l1} onChange={(v) => u("l1", v)} min={1} max={300} step={0.5} tolVal={params.toll1} onTolChange={(v) => u("toll1", v)} />
+            )}
+            {params.toolType !== "stepdrill" && (
+              <>
+                <NIT label="Boğaz (l₂)" value={params.l2} onChange={(v) => u("l2", v)} min={0} max={200} step={0.5} tolVal={params.toll2} onTolChange={(v) => u("toll2", v)} />
+                {params.l2 > 0 && <NIT label="Boğaz Çapı" value={params.neckDia} onChange={(v) => u("neckDia", v)} min={0.5} max={params.d} step={0.1} tolVal={params.tolNeck} onTolChange={(v) => u("tolNeck", v)} />}
+                {params.l2 > 0 && <NI label="Geçiş Açısı" value={params.neckAngle} onChange={(v) => u("neckAngle", v)} min={10} max={90} step={5} unit="°" />}
+              </>
+            )}
+            {params.toolType === "stepdrill" && (
+              <div style={{ fontSize: 9, color: "var(--text-lo)", fontStyle: "italic", fontFamily: "var(--mono)", marginTop: 2 }}>Kesici boy ve çaplar kademelerden hesaplanır</div>
+            )}
           </div>
         </div>
-        {params.toolType === "bullnose" && <NI label="Köşe R" value={params.rCorner} onChange={(v) => u("rCorner", v)} min={0} max={params.D / 2} step={0.1} />}
-        {params.toolType === "chamfer" && <NI label="Pah Boyu" value={params.chamferSize} onChange={(v) => u("chamferSize", v)} min={0} max={params.D / 2} step={0.1} />}
-        </div>)}
-      </div>
 
-      {/* ── Step Drill Kademe Yönetimi ── */}
-      {params.toolType === "stepdrill" && (
-        <div style={sec}>
-          {secTog("Kademeler", "step")}
-          {openSec.step && (<div>
-          {(params.steps || []).map((st, idx) => (
-            <div key={idx} style={{ marginBottom: 8, padding: 6, background: "#0f172a", borderRadius: 4, border: "1px solid #1e293b" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
-                <span style={{ fontSize: 10, color: "#f97316", fontWeight: 700, fontFamily: "'IBM Plex Mono', monospace" }}>
-                  Kademe {idx + 1}
-                </span>
-                {(params.steps || []).length > 1 && (
-                  <button onClick={() => {
-                    setParams(p => ({ ...p, steps: p.steps.filter((_, i) => i !== idx) }));
-                  }} style={{ background: "#7f1d1d", border: "none", borderRadius: 3, padding: "1px 6px", color: "#fca5a5", fontSize: 9, cursor: "pointer", fontFamily: "'IBM Plex Mono', monospace" }}>Sil</button>
-                )}
+        {/* GEOMETRİ */}
+        {SH("Geometri", "geo", "⟳")}
+        {openSec.geo && <div style={SB}>
+          <NI label="Diş Sayısı (z)" value={params.z} onChange={(v) => u("z", v)} min={1} max={16} unit="Z" />
+          <NI label="Helis Açısı" value={params.helix} onChange={(v) => u("helix", v)} min={0} max={60} unit="°" />
+          <NI label="Çekirdek (dc)" value={params.dCore} onChange={(v) => u("dCore", v)} min={0} max={params.D} step={0.1} />
+          {params.toolType === "drill" && <NI label="Uç Açısı" value={params.pointAngle} onChange={(v) => u("pointAngle", v)} min={60} max={180} step={1} unit="°" />}
+          <div style={{ display: "flex", gap: 6, marginBottom: 2 }}>
+            {[["helixHand","Helis Yönü"],["cutDir","Kesim Yönü"]].map(([k,lbl]) => (
+              <div key={k} style={{ flex: 1 }}>
+                <label style={LBL}>{lbl}</label>
+                <select value={params[k]} onChange={(e) => u(k, e.target.value)}
+                  style={{ width: "100%", background: "var(--bg-input)", border: "1px solid var(--border-mid)", borderRadius: 3, padding: "3px 5px", color: "var(--text-hi)", fontSize: 11, fontFamily: "var(--mono)" }}>
+                  <option value="Sağ">Sağ</option><option value="Sol">Sol</option>
+                </select>
               </div>
-              <div style={{ display: "flex", gap: 4, marginBottom: 3 }}>
-                <div style={{ flex: 1 }}>
-                  <label style={{ fontSize: 9, color: "#64748b", fontFamily: "'IBM Plex Mono', monospace" }}>⌀ Çap</label>
-                  <input type="number" value={st.dia} step={0.1} min={0.5}
-                    onChange={(ev) => {
-                      const v = parseFloat(ev.target.value) || 0;
-                      setParams(p => ({ ...p, steps: p.steps.map((s, i) => i === idx ? { ...s, dia: v } : s) }));
-                    }}
-                    style={{ width: "100%", background: "#1e293b", border: "1px solid #334155", borderRadius: 3, padding: "2px 4px", color: "#e2e8f0", fontSize: 11, fontFamily: "'IBM Plex Mono', monospace", outline: "none", boxSizing: "border-box" }} />
+            ))}
+          </div>
+          {params.toolType === "bullnose" && <NI label="Köşe R" value={params.rCorner} onChange={(v) => u("rCorner", v)} min={0} max={params.D/2} step={0.1} />}
+          {params.toolType === "chamfer" && <NI label="Pah Boyu" value={params.chamferSize} onChange={(v) => u("chamferSize", v)} min={0} max={params.D/2} step={0.1} />}
+        </div>}
+
+        {/* KADEMELER */}
+        {params.toolType === "stepdrill" && <>
+          {SH("Kademeler", "step", "◈")}
+          {openSec.step && <div style={SB}>
+            {(params.steps || []).map((st, idx) => (
+              <div key={idx} style={{ marginBottom: 7, padding: "6px 7px", background: "var(--bg-input)", borderRadius: 3, border: "1px solid var(--border-mid)" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 5 }}>
+                  <span style={{ fontSize: 8.5, color: "var(--accent)", fontWeight: 700, fontFamily: "var(--mono)", letterSpacing: 1.5 }}>KD-{idx + 1}</span>
+                  {(params.steps || []).length > 1 && (
+                    <button onClick={() => setParams(p => ({ ...p, steps: p.steps.filter((_,i) => i !== idx) }))}
+                      style={{ background: "transparent", border: "1px solid var(--red)", borderRadius: 2, padding: "1px 6px", color: "var(--red)", fontSize: 8, cursor: "pointer", fontFamily: "var(--mono)" }}>SİL</button>
+                  )}
                 </div>
-                <div style={{ flex: 1 }}>
-                  <label style={{ fontSize: 9, color: "#64748b", fontFamily: "'IBM Plex Mono', monospace" }}>Boy</label>
-                  <input type="number" value={st.len} step={0.5} min={0.5}
-                    onChange={(ev) => {
-                      const v = parseFloat(ev.target.value) || 0;
-                      setParams(p => ({ ...p, steps: p.steps.map((s, i) => i === idx ? { ...s, len: v } : s) }));
-                    }}
-                    style={{ width: "100%", background: "#1e293b", border: "1px solid #334155", borderRadius: 3, padding: "2px 4px", color: "#e2e8f0", fontSize: 11, fontFamily: "'IBM Plex Mono', monospace", outline: "none", boxSizing: "border-box" }} />
+                <div style={{ display: "flex", gap: 4, marginBottom: 3 }}>
+                  {[["dia","⌀ ÇAP",0.1,0.5],["len","BOY",0.5,0.5],["angle","AÇI°",1,30]].map(([fld,lbl,stp,mn]) => (
+                    <div key={fld} style={{ flex: 1 }}>
+                      <label style={LBL}>{lbl}</label>
+                      <input type="number" value={st[fld]} step={stp} min={mn}
+                        onChange={(ev) => { const v = parseFloat(ev.target.value)||0; setParams(p => ({...p, steps: p.steps.map((s,i) => i===idx ? {...s,[fld]:v} : s)})); }}
+                        style={{ width: "100%", background: "var(--bg-surface)", border: "1px solid var(--border-mid)", borderRadius: 3, padding: "3px 4px", color: "var(--text-hi)", fontSize: 11, fontFamily: "var(--mono)", boxSizing: "border-box" }} />
+                    </div>
+                  ))}
                 </div>
-                <div style={{ flex: 1 }}>
-                  <label style={{ fontSize: 9, color: "#64748b", fontFamily: "'IBM Plex Mono', monospace" }}>Açı°</label>
-                  <input type="number" value={st.angle} step={1} min={30} max={180}
-                    onChange={(ev) => {
-                      const v = parseFloat(ev.target.value) || 90;
-                      setParams(p => ({ ...p, steps: p.steps.map((s, i) => i === idx ? { ...s, angle: v } : s) }));
-                    }}
-                    style={{ width: "100%", background: "#1e293b", border: "1px solid #334155", borderRadius: 3, padding: "2px 4px", color: "#e2e8f0", fontSize: 11, fontFamily: "'IBM Plex Mono', monospace", outline: "none", boxSizing: "border-box" }} />
-                </div>
-              </div>
-              <div style={{ display: "flex", gap: 4 }}>
-                <div style={{ flex: 1 }}>
-                  <label style={{ fontSize: 9, color: "#64748b", fontFamily: "'IBM Plex Mono', monospace" }}>Tol Çap</label>
-                  <TolInput value={st.tolDia || ""} onChange={(v) => {
-                    setParams(p => ({ ...p, steps: p.steps.map((s, i) => i === idx ? { ...s, tolDia: v } : s) }));
-                  }} />
-                </div>
-                <div style={{ flex: 1 }}>
-                  <label style={{ fontSize: 9, color: "#64748b", fontFamily: "'IBM Plex Mono', monospace" }}>Tol Boy</label>
-                  <TolInput value={st.tolLen || ""} onChange={(v) => {
-                    setParams(p => ({ ...p, steps: p.steps.map((s, i) => i === idx ? { ...s, tolLen: v } : s) }));
-                  }} />
+                <div style={{ display: "flex", gap: 4 }}>
+                  {[["tolDia","TOL ÇAP"],["tolLen","TOL BOY"]].map(([fld,lbl]) => (
+                    <div key={fld} style={{ flex: 1 }}>
+                      <label style={LBL}>{lbl}</label>
+                      <TolInput value={st[fld]||""} onChange={(v) => setParams(p => ({...p, steps: p.steps.map((s,i) => i===idx ? {...s,[fld]:v} : s)}))} />
+                    </div>
+                  ))}
                 </div>
               </div>
+            ))}
+            <button onClick={() => { const last=(params.steps||[]).slice(-1)[0]; setParams(p => ({...p, steps: [...(p.steps||[]), {dia: last?last.dia+2:params.D, len:15, angle:90, tolDia:"", tolLen:""}]})); }}
+              style={{ width: "100%", background: "transparent", border: "1px dashed var(--border-hi)", borderRadius: 3, padding: "5px 0", color: "var(--accent)", fontSize: 8.5, cursor: "pointer", fontFamily: "var(--mono)", fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" }}>
+              + KADEME EKLE
+            </button>
+          </div>}
+        </>}
+
+        {/* SOĞUTMA */}
+        {SH("Soğutma", "cool", "⬡")}
+        {openSec.cool && <div style={SB}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 5 }}>
+            <label style={{ fontSize: 10.5, color: "var(--text-mid)", fontFamily: "var(--mono)" }}>Soğutma Deliği</label>
+            <input type="checkbox" checked={params.coolantHole} onChange={(e) => u("coolantHole", e.target.checked)} style={{ accentColor: "var(--accent)", width: 14, height: 14 }} />
+          </div>
+          {params.coolantHole && <NI label="Delik Sayısı" value={params.coolantCount} onChange={(v) => u("coolantCount", v)} min={1} max={8} unit="ad" />}
+        </div>}
+
+        {/* RESİMDE GÖSTER */}
+        {SH("Resimde Göster", "show", "◎")}
+        {openSec.show && <div style={SB}>
+          {[["showDimD","⌀D Kesici Çap"],["showDimd","⌀d Sap Çapı"],["showDimL","L Toplam Boy"],["showDiml1","l₁ Kesici Boy"],["showDiml2","l₂ Boğaz Boyu"],["showDimNeck","⌀ Boğaz Çapı"],["showDimHelix","Helis Açısı"],["showDimAngles","Açılar / R"]].map(([key,lbl]) => (
+            <div key={key} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4, cursor: "pointer" }} onClick={() => u(key, !params[key])}>
+              <div style={{ width: 13, height: 13, borderRadius: 2, flexShrink: 0, background: params[key] ? "var(--accent)" : "transparent", border: `1px solid ${params[key] ? "var(--accent)" : "var(--border-hi)"}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                {params[key] && <span style={{ fontSize: 8, color: "#000", fontWeight: 900, lineHeight: 1 }}>✓</span>}
+              </div>
+              <label style={{ fontSize: 10, color: params[key] ? "var(--text-hi)" : "var(--text-mid)", fontFamily: "var(--mono)", cursor: "pointer" }}>{lbl}</label>
             </div>
           ))}
-          <button onClick={() => {
-            const last = (params.steps || []).slice(-1)[0];
-            const newDia = last ? last.dia + 2 : params.D;
-            setParams(p => ({ ...p, steps: [...(p.steps || []), { dia: newDia, len: 15, angle: 90, tolDia: "", tolLen: "" }] }));
-          }} style={{
-            width: "100%", background: "#1e293b", border: "1px dashed #475569", borderRadius: 4,
-            padding: "4px 0", color: "#f97316", fontSize: 10, cursor: "pointer",
-            fontFamily: "'IBM Plex Mono', monospace", fontWeight: 600,
-          }}>+ Kademe Ekle</button>
-          </div>)}
-        </div>
-      )}
+        </div>}
 
-      <div style={sec}>
-        {secTog("Soğutma", "cool")}
-        {openSec.cool && (<div>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-          <label style={{ fontSize: 11, color: "#94a3b8", fontFamily: "'IBM Plex Mono', monospace" }}>Soğutma Deliği</label>
-          <input type="checkbox" checked={params.coolantHole} onChange={(e) => u("coolantHole", e.target.checked)} style={{ accentColor: "#f97316" }} />
-        </div>
-        {params.coolantHole && <NI label="Delik Sayısı" value={params.coolantCount} onChange={(v) => u("coolantCount", v)} min={1} max={8} unit="ad" />}
-        </div>)}
-      </div>
-
-      <div style={sec}>
-        {secTog("Resimde Göster", "show")}
-        {openSec.show && (<div>
-        {[
-          ["showDimD", "⌀D Kesici Çap"],
-          ["showDimd", "⌀d Sap Çapı"],
-          ["showDimL", "L Toplam Boy"],
-          ["showDiml1", "l₁ Kesici Boy"],
-          ["showDiml2", "l₂ Boğaz Boyu"],
-          ["showDimNeck", "⌀ Boğaz Çapı"],
-          ["showDimHelix", "Helis Açısı"],
-          ["showDimAngles", "Açılar / R"],
-        ].map(([key, label]) => (
-          <div key={key} style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 2 }}>
-            <input type="checkbox" checked={params[key]} onChange={(ev) => u(key, ev.target.checked)} style={{ accentColor: "#f97316", margin: 0 }} />
-            <label style={{ fontSize: 10.5, color: params[key] ? "#cbd5e1" : "#475569", fontFamily: "'IBM Plex Mono', monospace", cursor: "pointer" }}
-              onClick={() => u(key, !params[key])}>{label}</label>
+        {/* RENKLER */}
+        {SH("Renkler", "col", "▣")}
+        {openSec.col && <div style={SB}>
+          {[["colShank","Sap"],["colNeck","Boğaz"],["colCut","Kesici"],["colFlute","Kanal"],["colTip","Uç"]].map(([key,lbl]) => (
+            <div key={key} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+              <input type="color" value={params[key]} onChange={(ev) => u(key, ev.target.value)}
+                style={{ width: 24, height: 18, border: "1px solid var(--border-hi)", borderRadius: 2, padding: 0, cursor: "pointer", background: "none", flexShrink: 0 }} />
+              <label style={{ fontSize: 10, color: "var(--text-mid)", fontFamily: "var(--mono)", flex: 1 }}>{lbl}</label>
+              <span style={{ fontSize: 8, color: "var(--text-lo)", fontFamily: "var(--mono)" }}>{params[key]}</span>
+            </div>
+          ))}
+          <div style={{ borderTop: "1px solid var(--border-dim)", marginTop: 7, paddingTop: 7, display: "flex", flexWrap: "wrap", gap: 4 }}>
+            {[
+              {l:"Numroto",c:{colShank:"#c8ccd2",colNeck:"#b0b5bc",colCut:"#6088b0",colFlute:"#3a5a78",colTip:"#88aed0"}},
+              {l:"Altın",c:{colShank:"#c8ccd2",colNeck:"#b0b5bc",colCut:"#b08830",colFlute:"#786028",colTip:"#d0b060"}},
+              {l:"TiAlN",c:{colShank:"#c8ccd2",colNeck:"#b0b5bc",colCut:"#7858a8",colFlute:"#4a3878",colTip:"#9878c0"}},
+              {l:"DLC",c:{colShank:"#c0c4c8",colNeck:"#a0a4a8",colCut:"#484848",colFlute:"#282828",colTip:"#606060"}},
+              {l:"TiN",c:{colShank:"#c8ccd2",colNeck:"#b0b5bc",colCut:"#c0a030",colFlute:"#887020",colTip:"#d8c050"}},
+              {l:"AlTiN",c:{colShank:"#c8ccd2",colNeck:"#b0b5bc",colCut:"#5a4848",colFlute:"#3a2828",colTip:"#786060"}},
+              {l:"Sade",c:{colShank:"#d0d0d0",colNeck:"#c0c0c0",colCut:"#b8b8b8",colFlute:"#888888",colTip:"#c8c8c8"}},
+            ].map(p => (
+              <button key={p.l} onClick={() => setParams(pr => ({...pr,...p.c}))}
+                style={{ background:"var(--bg-input)", border:"1px solid var(--border-mid)", borderRadius:2, padding:"2px 8px", color:"var(--text-mid)", fontSize:8.5, cursor:"pointer", fontFamily:"var(--mono)", letterSpacing:0.5 }}
+                onMouseOver={(e) => { e.currentTarget.style.background="var(--bg-surface)"; e.currentTarget.style.color="var(--accent)"; e.currentTarget.style.borderColor="var(--accent)"; }}
+                onMouseOut={(e) => { e.currentTarget.style.background="var(--bg-input)"; e.currentTarget.style.color="var(--text-mid)"; e.currentTarget.style.borderColor="var(--border-mid)"; }}>
+                {p.l}
+              </button>
+            ))}
           </div>
-        ))}
-        </div>)}
-      </div>
+        </div>}
 
-      <div style={sec}>
-        {secTog("Renkler", "col")}
-        {openSec.col && (<div>
-        {[
-          ["colShank", "Sap"],
-          ["colNeck", "Boğaz"],
-          ["colCut", "Kesici"],
-          ["colFlute", "Kanal"],
-          ["colTip", "Uç"],
-        ].map(([key, label]) => (
-          <div key={key} style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 3 }}>
-            <input type="color" value={params[key]} onChange={(ev) => u(key, ev.target.value)}
-              style={{ width: 24, height: 20, border: "1px solid #334155", borderRadius: 3, padding: 0, cursor: "pointer", background: "none" }} />
-            <label style={{ fontSize: 10.5, color: "#94a3b8", fontFamily: "'IBM Plex Mono', monospace", flex: 1 }}>{label}</label>
-            <span style={{ fontSize: 9, color: "#475569", fontFamily: "'IBM Plex Mono', monospace" }}>{params[key]}</span>
+        {/* DOKÜMAN */}
+        {SH("Doküman Bilgileri", "doc", "☰")}
+        {openSec.doc && <div style={SB}>
+          <div style={{ marginBottom: 5 }}>
+            <label style={LBL}>Alet Adı</label>
+            <input type="text" value={params.toolName} onChange={(e) => u("toolName", e.target.value)} style={INP} />
           </div>
-        ))}
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 3, marginTop: 6 }}>
+          <div style={{ display: "flex", gap: 5, marginBottom: 5 }}>
+            {[["material","Malzeme"],["coating","Kaplama"]].map(([k,l]) => (
+              <div key={k} style={{ flex: 1 }}><label style={LBL}>{l}</label><input type="text" value={params[k]} onChange={(e) => u(k,e.target.value)} style={{...INP}} /></div>
+            ))}
+          </div>
+          <div style={{ display: "flex", gap: 5, marginBottom: 5 }}>
+            {[["drawingNo","Çizim No"],["revision","Revizyon"]].map(([k,l]) => (
+              <div key={k} style={{ flex: 1 }}><label style={LBL}>{l}</label><input type="text" value={params[k]} onChange={(e) => u(k,e.target.value)} style={{...INP}} /></div>
+            ))}
+          </div>
+          <div><label style={LBL}>Oluşturan</label><input type="text" value={params.createdBy} onChange={(e) => u("createdBy",e.target.value)} style={INP} /></div>
+        </div>}
+
+        {/* HIZLI ŞABLONLAR */}
+        {SH("Hızlı Şablonlar", "tpl", "⬕")}
+        {openSec.tpl && <div style={{ ...SB, display: "flex", flexWrap: "wrap", gap: 4 }}>
           {[
-            { label: "Numroto Mavi", c: { colShank: "#c8ccd2", colNeck: "#b0b5bc", colCut: "#6088b0", colFlute: "#3a5a78", colTip: "#88aed0" } },
-            { label: "Altın Kaplama", c: { colShank: "#c8ccd2", colNeck: "#b0b5bc", colCut: "#b08830", colFlute: "#786028", colTip: "#d0b060" } },
-            { label: "TiAlN Mor", c: { colShank: "#c8ccd2", colNeck: "#b0b5bc", colCut: "#7858a8", colFlute: "#4a3878", colTip: "#9878c0" } },
-            { label: "DLC Siyah", c: { colShank: "#c0c4c8", colNeck: "#a0a4a8", colCut: "#484848", colFlute: "#282828", colTip: "#606060" } },
-            { label: "TiN Sarı", c: { colShank: "#c8ccd2", colNeck: "#b0b5bc", colCut: "#c0a030", colFlute: "#887020", colTip: "#d8c050" } },
-            { label: "AlTiN Koyu", c: { colShank: "#c8ccd2", colNeck: "#b0b5bc", colCut: "#5a4848", colFlute: "#3a2828", colTip: "#786060" } },
-            { label: "Sade (Renksiz)", c: { colShank: "#d0d0d0", colNeck: "#c0c0c0", colCut: "#b8b8b8", colFlute: "#888888", colTip: "#c8c8c8" } },
-          ].map((p) => (
-            <button key={p.label} onClick={() => setParams((pr) => ({ ...pr, ...p.c }))}
-              style={{
-                background: "#1e293b", border: "1px solid #334155", borderRadius: 3,
-                padding: "2px 7px", color: "#94a3b8", fontSize: 9, cursor: "pointer",
-                fontFamily: "'IBM Plex Mono', monospace",
-              }}
-              onMouseOver={(ev) => { ev.target.style.background = "#334155"; ev.target.style.color = "#f97316"; }}
-              onMouseOut={(ev) => { ev.target.style.background = "#1e293b"; ev.target.style.color = "#94a3b8"; }}>
-              {p.label}
+            {l:"⌀6 Kısa",p:{D:6,d:6,L:50,l1:15,l2:0,z:4,helix:30,dCore:3.6,toolType:"flat",rCorner:0,chamferSize:0,toolName:"MHK-E6x50-4Z",tolD:"h6",told:"h6",toll1:"±0.05",tolL:"",toll2:"",tolNeck:""}},
+            {l:"⌀10 Boğaz",p:{D:10,d:10,L:100,l1:30,l2:12,z:4,helix:30,dCore:6,neckDia:8.5,neckAngle:45,toolType:"flat",rCorner:0,chamferSize:0,toolName:"MHK-E10x100-4Z-N",tolD:"h6",told:"h6",toll1:"±0.05",tolL:"",toll2:"",tolNeck:""}},
+            {l:"⌀8 Ball",p:{D:8,d:8,L:60,l1:20,l2:0,z:2,helix:30,dCore:5,toolType:"ballnose",rCorner:0,chamferSize:0,toolName:"MHK-B8x60-2Z",tolD:"h6",told:"h6",toll1:"±0.1",tolL:"",toll2:"",tolNeck:""}},
+            {l:"⌀12 R1",p:{D:12,d:12,L:75,l1:30,l2:0,z:4,helix:35,dCore:7,toolType:"bullnose",rCorner:1,chamferSize:0,toolName:"MHK-R12x75-4Z-R1",tolD:"±0.005",told:"h5",toll1:"±0.02",tolL:"",toll2:"",tolNeck:""}},
+            {l:"⌀16 3Z",p:{D:16,d:16,L:100,l1:45,l2:10,z:3,helix:35,dCore:10,neckDia:13.5,neckAngle:30,toolType:"flat",rCorner:0,chamferSize:0,toolName:"MHK-E16x100-3Z-N",tolD:"h6",told:"h6",toll1:"±0.05",tolL:"",toll2:"",tolNeck:""}},
+            {l:"⌀8 Mat.",p:{D:8,d:8,L:80,l1:50,l2:0,z:2,helix:30,dCore:4,toolType:"drill",pointAngle:140,rCorner:0,chamferSize:0,toolName:"MHK-D8x80-2Z",tolD:"h6",told:"h6",toll1:"±0.1",tolL:"",toll2:"",tolNeck:""}},
+            {l:"Kd ⌀10/14",p:{D:14,d:12,L:90,l1:30,l2:0,z:2,helix:30,dCore:5,toolType:"stepdrill",pointAngle:140,rCorner:0,chamferSize:0,toolName:"MHK-SD10-14x90",tolD:"",told:"h6",toll1:"",tolL:"",toll2:"",tolNeck:"",steps:[{dia:10,len:15,angle:140,tolDia:"±0.01",tolLen:"±0.01"},{dia:14,len:15,angle:90,tolDia:"±0.01",tolLen:"±0.01"}]}},
+            {l:"3 Kademe",p:{D:20,d:12,L:90,l1:45,l2:0,z:2,helix:30,dCore:6,toolType:"stepdrill",pointAngle:140,rCorner:0,chamferSize:0,toolName:"MHK-SD3K",tolD:"",told:"h6",toll1:"",tolL:"",toll2:"",tolNeck:"",steps:[{dia:12,len:15,angle:140,tolDia:"±0.01",tolLen:""},{dia:16,len:15,angle:90,tolDia:"±0.005",tolLen:"±0.01"},{dia:20,len:15,angle:90,tolDia:"±0.005",tolLen:"±0.01"}]}},
+          ].map(pr => (
+            <button key={pr.l} onClick={() => setParams(p => ({...p,...pr.p}))}
+              style={{ background:"var(--bg-input)", border:"1px solid var(--border-mid)", borderRadius:2, padding:"4px 9px", color:"var(--text-mid)", fontSize:9, cursor:"pointer", fontFamily:"var(--mono)" }}
+              onMouseOver={(e) => { e.currentTarget.style.background="var(--bg-surface)"; e.currentTarget.style.color="var(--accent)"; e.currentTarget.style.borderColor="var(--accent)"; }}
+              onMouseOut={(e) => { e.currentTarget.style.background="var(--bg-input)"; e.currentTarget.style.color="var(--text-mid)"; e.currentTarget.style.borderColor="var(--border-mid)"; }}>
+              {pr.l}
             </button>
           ))}
-        </div>
-        </div>)}
-      </div>
+        </div>}
 
-      <div style={sec}>
-        {secTog("Doküman Bilgileri", "doc")}
-        {openSec.doc && (<div>
-        <div style={{ marginBottom: 3 }}>
-          <label style={{ fontSize: 10, color: "#94a3b8", display: "block", marginBottom: 2, fontFamily: "'IBM Plex Mono', monospace" }}>Alet Adı</label>
-          <input type="text" value={params.toolName} onChange={(e) => u("toolName", e.target.value)} style={txS} />
-        </div>
-        <div style={{ display: "flex", gap: 4, marginBottom: 3 }}>
-          <div style={{ flex: 1 }}>
-            <label style={{ fontSize: 10, color: "#94a3b8", display: "block", marginBottom: 2, fontFamily: "'IBM Plex Mono', monospace" }}>Malzeme</label>
-            <input type="text" value={params.material} onChange={(e) => u("material", e.target.value)} style={txS} />
-          </div>
-          <div style={{ flex: 1 }}>
-            <label style={{ fontSize: 10, color: "#94a3b8", display: "block", marginBottom: 2, fontFamily: "'IBM Plex Mono', monospace" }}>Kaplama</label>
-            <input type="text" value={params.coating} onChange={(e) => u("coating", e.target.value)} style={txS} />
-          </div>
-        </div>
-        <div style={{ display: "flex", gap: 4, marginBottom: 3 }}>
-          <div style={{ flex: 1 }}>
-            <label style={{ fontSize: 10, color: "#94a3b8", display: "block", marginBottom: 2, fontFamily: "'IBM Plex Mono', monospace" }}>Çizim No</label>
-            <input type="text" value={params.drawingNo} onChange={(e) => u("drawingNo", e.target.value)} style={txS} />
-          </div>
-          <div style={{ flex: 1 }}>
-            <label style={{ fontSize: 10, color: "#94a3b8", display: "block", marginBottom: 2, fontFamily: "'IBM Plex Mono', monospace" }}>Revizyon</label>
-            <input type="text" value={params.revision} onChange={(e) => u("revision", e.target.value)} style={txS} />
-          </div>
-        </div>
-        <div style={{ marginBottom: 3 }}>
-          <label style={{ fontSize: 10, color: "#94a3b8", display: "block", marginBottom: 2, fontFamily: "'IBM Plex Mono', monospace" }}>Oluşturan</label>
-          <input type="text" value={params.createdBy} onChange={(e) => u("createdBy", e.target.value)} style={txS} />
-        </div>
-        </div>)}
-      </div>
-
-      <div>
-        {secTog("Hızlı Şablonlar", "tpl")}
-        {openSec.tpl && (<div style={{ display: "flex", flexWrap: "wrap", gap: 3 }}>
-          {[
-            { label: "⌀6 Kısa", p: { D: 6, d: 6, L: 50, l1: 15, l2: 0, z: 4, helix: 30, dCore: 3.6, toolType: "flat", rCorner: 0, chamferSize: 0, toolName: "MHK-E6x50-4Z", tolD: "h6", told: "h6", toll1: "±0.05", tolL: "", toll2: "", tolNeck: "" } },
-            { label: "⌀10 Boğaz", p: { D: 10, d: 10, L: 100, l1: 30, l2: 12, z: 4, helix: 30, dCore: 6, neckDia: 8.5, neckAngle: 45, toolType: "flat", rCorner: 0, chamferSize: 0, toolName: "MHK-E10x100-4Z-N", tolD: "h6", told: "h6", toll1: "±0.05", tolL: "", toll2: "", tolNeck: "" } },
-            { label: "⌀8 Ball", p: { D: 8, d: 8, L: 60, l1: 20, l2: 0, z: 2, helix: 30, dCore: 5, toolType: "ballnose", rCorner: 0, chamferSize: 0, toolName: "MHK-B8x60-2Z", tolD: "h6", told: "h6", toll1: "±0.1", tolL: "", toll2: "", tolNeck: "" } },
-            { label: "⌀12 R1", p: { D: 12, d: 12, L: 75, l1: 30, l2: 0, z: 4, helix: 35, dCore: 7, toolType: "bullnose", rCorner: 1, chamferSize: 0, toolName: "MHK-R12x75-4Z-R1", tolD: "±0.005", told: "h5", toll1: "±0.02", tolL: "", toll2: "", tolNeck: "" } },
-            { label: "⌀16 3Z", p: { D: 16, d: 16, L: 100, l1: 45, l2: 10, z: 3, helix: 35, dCore: 10, neckDia: 13.5, neckAngle: 30, toolType: "flat", rCorner: 0, chamferSize: 0, toolName: "MHK-E16x100-3Z-N", tolD: "h6", told: "h6", toll1: "±0.05", tolL: "", toll2: "", tolNeck: "" } },
-            { label: "⌀8 Matkap", p: { D: 8, d: 8, L: 80, l1: 50, l2: 0, z: 2, helix: 30, dCore: 4, toolType: "drill", pointAngle: 140, rCorner: 0, chamferSize: 0, toolName: "MHK-D8x80-2Z", tolD: "h6", told: "h6", toll1: "±0.1", tolL: "", toll2: "", tolNeck: "" } },
-            { label: "Kademe ⌀10/14", p: { D: 14, d: 12, L: 90, l1: 30, l2: 0, z: 2, helix: 30, dCore: 5, toolType: "stepdrill", pointAngle: 140, rCorner: 0, chamferSize: 0, toolName: "MHK-SD10-14x90", tolD: "", told: "h6", toll1: "", tolL: "", toll2: "", tolNeck: "",
-              steps: [
-                { dia: 10, len: 15, angle: 140, tolDia: "±0.01", tolLen: "±0.01" },
-                { dia: 14, len: 15, angle: 90, tolDia: "±0.01", tolLen: "±0.01" },
-              ] } },
-            { label: "3 Kademe", p: { D: 20, d: 12, L: 90, l1: 45, l2: 0, z: 2, helix: 30, dCore: 6, toolType: "stepdrill", pointAngle: 140, rCorner: 0, chamferSize: 0, toolName: "MHK-SD3K", tolD: "", told: "h6", toll1: "", tolL: "", toll2: "", tolNeck: "",
-              steps: [
-                { dia: 12, len: 15, angle: 140, tolDia: "±0.01", tolLen: "" },
-                { dia: 16, len: 15, angle: 90, tolDia: "±0.005", tolLen: "±0.01" },
-                { dia: 20, len: 15, angle: 90, tolDia: "±0.005", tolLen: "±0.01" },
-              ] } },
-          ].map((pr) => (
-            <button key={pr.label} onClick={() => setParams((p) => ({ ...p, ...pr.p }))}
-              style={{
-                background: "#1e293b", border: "1px solid #334155", borderRadius: 3,
-                padding: "3px 8px", color: "#94a3b8", fontSize: 10, cursor: "pointer",
-                fontFamily: "'IBM Plex Mono', monospace",
-              }}
-              onMouseOver={(e) => { e.target.style.background = "#334155"; e.target.style.color = "#f97316"; }}
-              onMouseOut={(e) => { e.target.style.background = "#1e293b"; e.target.style.color = "#94a3b8"; }}>
-              {pr.label}
-            </button>
-          ))}
-        </div>)}
-      </div>
+      </div>{/* end scroll */}
     </div>
   );
 }
@@ -1215,7 +1198,7 @@ function App() {
 
   const svgW = 500;
   const svgH = 340;
-  const da = { x: 8, y: 18, w: svgW - 16, h: svgH - 100 };
+  const da = { x: 8, y: 28, w: svgW - 16, h: svgH - 110 };
 
   const calc = useMemo(() => {
     const mxH = da.w * (view === "all" ? 0.58 : 0.85);
@@ -1234,145 +1217,108 @@ function App() {
   const eCx = view === "all" ? da.x + da.w * 0.82 : da.x + da.w * 0.5;
   const eCy = da.y + da.h * 0.42;
 
-  return (
-    <div style={{ display: "flex", height: "100vh", fontFamily: "'IBM Plex Mono', monospace", background: "#0b1120" }}>
-      <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Syne:wght@700;800&display=swap" rel="stylesheet" />
+  const BTN = (label, onClick, color, hov) => (
+    <button onClick={onClick} style={{ background: color, border: "none", borderRadius: 3, padding: isMobile ? "5px 8px" : "4px 13px", color: "#fff", fontSize: isMobile ? 10 : 10.5, cursor: "pointer", fontFamily: "var(--mono)", fontWeight: 600, letterSpacing: 0.5, display: "flex", alignItems: "center", gap: 3 }}
+      onMouseOver={(e) => e.currentTarget.style.background = hov}
+      onMouseOut={(e) => e.currentTarget.style.background = color}>
+      {label}
+    </button>
+  );
 
-      {/* Panel - sidebar on desktop, slide-out drawer on mobile */}
+  return (
+    <div style={{ display: "flex", height: "100vh", fontFamily: "var(--mono)", background: "var(--bg-base)" }}>
+
       {!isMobile && <Panel params={params} setParams={setParams} isMobile={false} showPanel={true} onClose={() => {}} />}
       {isMobile && <Panel params={params} setParams={setParams} isMobile={true} showPanel={showPanel} onClose={() => setShowPanel(false)} />}
 
-      {/* Mobile backdrop overlay */}
       {isMobile && showPanel && (
-        <div onClick={() => setShowPanel(false)} style={{
-          position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)",
-          zIndex: 999, transition: "opacity 0.3s",
-        }} />
+        <div onClick={() => setShowPanel(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 999 }} />
       )}
 
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
-        {/* Toolbar */}
-        <div style={{ display: "flex", alignItems: "center", gap: isMobile ? 4 : 6, padding: isMobile ? "5px 8px" : "6px 14px", background: "#0f172a", borderBottom: "1px solid #1e293b", flexWrap: isMobile ? "wrap" : "nowrap" }}>
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", minWidth: 0 }}>
 
-          {/* Hamburger menu - mobile only */}
+        {/* ── TOOLBAR ── */}
+        <div style={{
+          display: "flex", alignItems: "center", gap: isMobile ? 3 : 5,
+          padding: isMobile ? "4px 8px" : "5px 12px",
+          background: "var(--bg-base)",
+          borderBottom: "1px solid var(--border-mid)",
+          flexWrap: "nowrap",
+          flexShrink: 0,
+        }}>
+          {/* Accent left stripe */}
+          <div style={{ position: "absolute", left: isMobile ? 0 : "var(--panel-w)", top: 0, width: 0, height: 0 }} />
+
           {isMobile && (
-            <button onClick={() => setShowPanel(true)} style={{
-              background: "#334155", border: "none", borderRadius: 4,
-              padding: "5px 10px", color: "#e2e8f0", fontSize: 16, cursor: "pointer",
-              fontWeight: 700, lineHeight: 1,
-            }}>☰</button>
+            <button onClick={() => setShowPanel(true)} style={{ background: "var(--bg-surface)", border: "1px solid var(--border-hi)", borderRadius: 3, padding: "5px 9px", color: "var(--text-hi)", fontSize: 14, cursor: "pointer", lineHeight: 1, flexShrink: 0 }}>☰</button>
           )}
-          {["all", "side", "end"].map((v) => (
-            <button key={v} onClick={() => setView(v)}
-              style={{
-                background: view === v ? "#f97316" : "#1e293b", border: "none", borderRadius: 4,
-                padding: isMobile ? "5px 8px" : "3px 12px", color: view === v ? "#fff" : "#94a3b8",
-                fontSize: isMobile ? 10 : 11, cursor: "pointer", fontFamily: "'IBM Plex Mono', monospace",
-                fontWeight: view === v ? 600 : 400,
-              }}>
-              {v === "all" ? "Tümü" : v === "side" ? "Yan" : "Uç"}
-            </button>
-          ))}
+
+          {/* View toggle — CAD style segmented */}
+          <div style={{ display: "flex", background: "var(--bg-surface)", border: "1px solid var(--border-hi)", borderRadius: 3, overflow: "hidden", flexShrink: 0 }}>
+            {[["all","TÜMÜ"],["side","YAN"],["end","UÇ"]].map(([v,lbl]) => (
+              <button key={v} onClick={() => setView(v)} style={{
+                background: view === v ? "var(--accent)" : "transparent",
+                border: "none",
+                borderRight: v !== "end" ? "1px solid var(--border-hi)" : "none",
+                padding: isMobile ? "4px 8px" : "4px 14px",
+                color: view === v ? "#fff" : "var(--text-mid)",
+                fontSize: isMobile ? 9 : 9.5, cursor: "pointer", fontFamily: "var(--mono)",
+                fontWeight: 700, letterSpacing: 1.5, transition: "background 0.12s",
+              }}>{lbl}</button>
+            ))}
+          </div>
+
           <div style={{ flex: 1 }} />
-          {/* PDF Export Button */}
-          <button onClick={() => {
-            const svgEl = document.getElementById("teknik-svg");
-            if (!svgEl) return;
-            const clone = svgEl.cloneNode(true);
-            clone.setAttribute("width", "100%");
-            clone.setAttribute("height", "auto");
-            const svgData = new XMLSerializer().serializeToString(clone);
-            const win = window.open("", "_blank");
-            win.document.write(`<!DOCTYPE html><html><head><title>MİHENK Teknik Resim - ${params.toolName}</title>
-              <style>@page{size:A4 landscape;margin:8mm;}body{margin:0;display:flex;justify-content:center;align-items:center;min-height:100vh;background:#fff;}svg{max-width:100%;height:auto;}</style>
-              </head><body>${svgData}</body></html>`);
-            win.document.close();
-            setTimeout(() => win.print(), 500);
-          }}
-            style={{
-              background: "#166534", border: "none", borderRadius: 4,
-              padding: "3px 14px", color: "#fff",
-              fontSize: 11, cursor: "pointer", fontFamily: "'IBM Plex Mono', monospace",
-              fontWeight: 600, display: "flex", alignItems: "center", gap: 4,
-            }}
-            onMouseOver={(e) => e.target.style.background = "#15803d"}
-            onMouseOut={(e) => e.target.style.background = "#166534"}>
-            📄{!isMobile && " PDF Kaydet"}
-          </button>
-          <button onClick={() => {
-            const svgEl = document.getElementById("teknik-svg");
-            if (!svgEl) return;
-            const clone = svgEl.cloneNode(true);
-            clone.setAttribute("xmlns", "http://www.w3.org/2000/svg");
-            const svgData = new XMLSerializer().serializeToString(clone);
-            const blob = new Blob([svgData], { type: "image/svg+xml" });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement("a");
-            a.href = url; a.download = `${params.toolName || "teknik-resim"}.svg`;
-            a.click(); URL.revokeObjectURL(url);
-          }}
-            style={{
-              background: "#1e40af", border: "none", borderRadius: 4,
-              padding: "3px 14px", color: "#fff",
-              fontSize: 11, cursor: "pointer", fontFamily: "'IBM Plex Mono', monospace",
-              fontWeight: 600,
-            }}
-            onMouseOver={(e) => e.target.style.background = "#2563eb"}
-            onMouseOut={(e) => e.target.style.background = "#1e40af"}>
-            💾{!isMobile && " SVG"}
-          </button>
-          <button onClick={() => {
-            const svgEl = document.getElementById("teknik-svg");
-            if (!svgEl) return;
-            const clone = svgEl.cloneNode(true);
-            clone.setAttribute("xmlns", "http://www.w3.org/2000/svg");
-            const svgData = new XMLSerializer().serializeToString(clone);
-            const canvas = document.createElement("canvas");
-            const vb = svgEl.viewBox.baseVal;
-            canvas.width = vb.width * 6; canvas.height = vb.height * 6;
-            const ctx = canvas.getContext("2d");
-            const img = new Image();
-            img.onload = () => {
-              ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, canvas.width, canvas.height);
-              ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-              const a = document.createElement("a");
-              a.href = canvas.toDataURL("image/png"); a.download = `${params.toolName || "teknik-resim"}.png`;
-              a.click();
-            };
-            img.src = "data:image/svg+xml;base64," + btoa(unescape(encodeURIComponent(svgData)));
-          }}
-            style={{
-              background: "#7c2d12", border: "none", borderRadius: 4,
-              padding: "3px 14px", color: "#fff",
-              fontSize: 11, cursor: "pointer", fontFamily: "'IBM Plex Mono', monospace",
-              fontWeight: 600,
-            }}
-            onMouseOver={(e) => e.target.style.background = "#9a3412"}
-            onMouseOut={(e) => e.target.style.background = "#7c2d12"}>
-            🖼{!isMobile && " PNG"}
-          </button>
-          <button onClick={() => setDimOff({})}
-            style={{
-              background: "#6b21a8", border: "none", borderRadius: 4,
-              padding: "3px 10px", color: "#fff",
-              fontSize: 11, cursor: "pointer", fontFamily: "'IBM Plex Mono', monospace",
-              fontWeight: 600,
-            }}
-            onMouseOver={(e) => e.target.style.background = "#7c3aed"}
-            onMouseOut={(e) => e.target.style.background = "#6b21a8"}>
-            ↺{!isMobile && " Sıfırla"}
-          </button>
+
+          {/* Status readout — desktop only */}
           {!isMobile && (
-            <span style={{ fontSize: 10, color: "#64748b" }}>
-              {calc.text} | ⌀{params.D}×{params.L}mm | {params.z}Z Helis {params.helix}°
-              {params.l2 > 0 ? ` | Boğaz: ⌀${params.neckDia}×${params.l2}mm @ ${params.neckAngle}°` : ""}
-            </span>
+            <div style={{ fontSize: 9, color: "var(--text-lo)", fontFamily: "var(--mono)", letterSpacing: 0.5, marginRight: 4, whiteSpace: "nowrap" }}>
+              <span style={{ color: "var(--text-mid)" }}>{calc.text}</span>
+              {" "}·{" "}
+              <span style={{ color: "var(--accent2)" }}>⌀{params.D}×{params.L}mm</span>
+              {" "}·{" "}{params.z}Z{" "}Helis{" "}{params.helix}°
+              {params.l2 > 0 ? <span style={{ color: "var(--text-lo)" }}>{" "}· Boğaz ⌀{params.neckDia}×{params.l2}mm@{params.neckAngle}°</span> : ""}
+            </div>
           )}
+
+          {/* Export buttons — unified style */}
+          {BTN(isMobile ? "📄" : "PDF", () => {
+            const svgEl = document.getElementById("teknik-svg");
+            if (!svgEl) return;
+            const clone = svgEl.cloneNode(true); clone.setAttribute("width","100%"); clone.setAttribute("height","auto");
+            const svgData = new XMLSerializer().serializeToString(clone);
+            const win = window.open("","_blank");
+            win.document.write(`<!DOCTYPE html><html><head><title>MİHENK - ${params.toolName}</title><style>@page{size:A4 landscape;margin:8mm;}body{margin:0;display:flex;justify-content:center;align-items:center;min-height:100vh;background:#fff;}svg{max-width:100%;height:auto;}</style></head><body>${svgData}</body></html>`);
+            win.document.close(); setTimeout(() => win.print(), 500);
+          }, "#1a4a28", "#1e6030")}
+
+          {BTN(isMobile ? "💾" : "SVG", () => {
+            const svgEl = document.getElementById("teknik-svg"); if (!svgEl) return;
+            const clone = svgEl.cloneNode(true); clone.setAttribute("xmlns","http://www.w3.org/2000/svg");
+            const blob = new Blob([new XMLSerializer().serializeToString(clone)], {type:"image/svg+xml"});
+            const url = URL.createObjectURL(blob); const a = document.createElement("a"); a.href=url; a.download=`${params.toolName||"teknik-resim"}.svg`; a.click(); URL.revokeObjectURL(url);
+          }, "#162040", "#1e3060")}
+
+          {BTN(isMobile ? "🖼" : "PNG", () => {
+            const svgEl = document.getElementById("teknik-svg"); if (!svgEl) return;
+            const clone = svgEl.cloneNode(true); clone.setAttribute("xmlns","http://www.w3.org/2000/svg");
+            const svgData = new XMLSerializer().serializeToString(clone);
+            const canvas = document.createElement("canvas"); const vb = svgEl.viewBox.baseVal;
+            canvas.width = vb.width*6; canvas.height = vb.height*6;
+            const ctx = canvas.getContext("2d"); const img = new Image();
+            img.onload = () => { ctx.fillStyle="#fff"; ctx.fillRect(0,0,canvas.width,canvas.height); ctx.drawImage(img,0,0,canvas.width,canvas.height); const a=document.createElement("a"); a.href=canvas.toDataURL("image/png"); a.download=`${params.toolName||"teknik-resim"}.png`; a.click(); };
+            img.src = "data:image/svg+xml;base64,"+btoa(unescape(encodeURIComponent(svgData)));
+          }, "#3a1a08", "#5a2a0a")}
+
+          {BTN(isMobile ? "↺" : "↺ Sıfırla", () => setDimOff({}), "var(--bg-surface)", "var(--bg-raised)")}
+
         </div>
-        <div style={{ flex: 1, display: "flex", background: "#111827", padding: 6, overflow: "hidden" }}>
+
+        {/* ── DRAWING AREA ── */}
+        <div className="cad-area" style={{ flex: 1, display: "flex", padding: isMobile ? 4 : 8, overflow: "hidden" }}>
           <svg id="teknik-svg" viewBox={`0 0 ${svgW} ${svgH}`}
             preserveAspectRatio="xMidYMid meet"
-            style={{ flex: 1, display: "block", background: "#fff", borderRadius: 2, boxShadow: "0 4px 24px rgba(0,0,0,0.5)" }}>
+            style={{ flex: 1, display: "block", background: "transparent", borderRadius: 2, filter: "drop-shadow(0 6px 30px rgba(0,0,0,0.55))" }}>
               {(() => {
                 // Helper: lighten/darken hex color
                 const adj = (hex, amt) => {
@@ -1418,30 +1364,44 @@ function App() {
                     <radialGradient id="gEndLand" cx="50%" cy="50%" r="50%">
                       <stop offset="0%" stopColor={adj(cc, 35)} /><stop offset="100%" stopColor={adj(cc, -5)} />
                     </radialGradient>
+                    {/* CAD grid pattern for SVG background */}
+                    <pattern id="cadGridMinor" patternUnits="userSpaceOnUse" width="5" height="5">
+                      <path d="M 5 0 L 0 0 0 5" fill="none" stroke="rgba(160,190,140,0.55)" strokeWidth="0.22"/>
+                    </pattern>
+                    <pattern id="cadGridMajor" patternUnits="userSpaceOnUse" width="25" height="25">
+                      <rect width="25" height="25" fill="url(#cadGridMinor)"/>
+                      <path d="M 25 0 L 0 0 0 25" fill="none" stroke="rgba(130,165,110,0.72)" strokeWidth="0.38"/>
+                    </pattern>
                   </defs>
                 );
               })()}
-              <rect x={1} y={1} width={svgW - 2} height={svgH - 2} fill="white" stroke="#333" strokeWidth={0.5} />
 
-              {/* Watermark logo — diagonal, visible */}
-              <image href={LOGO_IMG} x={svgW / 2 - 110} y={da.y + da.h * 0.18} width={220} height={90} opacity={0.12} preserveAspectRatio="xMidYMid meet"
+              {/* Background: white + CAD grid */}
+              {/* White base + grid in one pass — white rect must NOT cover grid */}
+              <rect x={1} y={1} width={svgW - 2} height={svgH - 2} fill="#f8fafc" stroke="#b0c4d8" strokeWidth={0.4} />
+              <rect x={1} y={1} width={svgW - 2} height={svgH - 2} fill="url(#cadGridMajor)" opacity={1} />
+
+              {/* Watermark logo — diagonal center */}
+              <image href={LOGO_IMG} x={svgW / 2 - 110} y={da.y + da.h * 0.18} width={220} height={90} opacity={0.07} preserveAspectRatio="xMidYMid meet"
                 transform={`rotate(-30, ${svgW / 2}, ${da.y + da.h * 0.5})`} />
 
-              <rect x={da.x} y={da.y} width={da.w} height={da.h} fill="none" stroke="#e8e8e8" strokeWidth={0.15} />
+              <rect x={da.x} y={da.y} width={da.w} height={da.h} fill="none" stroke="#d8e4ee" strokeWidth={0.2} />
 
-              <image href={LOGO_IMG} x={svgW / 2 - 25} y={3} width={50} height={12} preserveAspectRatio="xMidYMid meet" />
-              <text x={svgW / 2} y={18} textAnchor="middle" fontSize={2.5} fontFamily="'IBM Plex Mono', monospace" fill="#999">Teknik Resim — {TOOL_TYPES[params.toolType]}</text>
+              {/* Header: logo left, title center */}
+              <image href={LOGO_IMG} x={da.x + 4} y={1} width={200} height={25} preserveAspectRatio="xMinYMid meet" />
+              <text x={svgW / 2} y={10} textAnchor="middle" fontSize={3.5} fontFamily="'IBM Plex Mono', monospace" fill="#3a6080" fontWeight="700" letterSpacing="1">MİHENK KESİCİ TAKIM</text>
+              <text x={svgW / 2} y={17} textAnchor="middle" fontSize={2.5} fontFamily="'IBM Plex Mono', monospace" fill="#8aa0b8">{TOOL_TYPES[params.toolType]} — Teknik Resim</text>
 
               {(view === "all" || view === "side") && (
                 <g>
-                  <text x={sOx} y={da.y + 7} textAnchor="middle" fontSize={2.8} fontFamily="'IBM Plex Mono', monospace" fill="#888" fontWeight="600">YAN GÖRÜNÜM</text>
+                  <text x={sOx} y={da.y + 7} textAnchor="middle" fontSize={2.8} fontFamily="'IBM Plex Mono', monospace" fill="#7a95b0" fontWeight="600">YAN GÖRÜNÜM</text>
                   <SideView params={params} ox={sOx} oy={sOy} scale={calc.scale} dimOff={dimOff} setDimOff={setDimOff} />
                 </g>
               )}
 
               {(view === "all" || view === "end") && (
                 <g>
-                  <text x={eCx} y={da.y + 7} textAnchor="middle" fontSize={2.8} fontFamily="'IBM Plex Mono', monospace" fill="#888" fontWeight="600">UÇTAN GÖRÜNÜM</text>
+                  <text x={eCx} y={da.y + 7} textAnchor="middle" fontSize={2.8} fontFamily="'IBM Plex Mono', monospace" fill="#7a95b0" fontWeight="600">UÇTAN GÖRÜNÜM</text>
                   <EndView params={params} cx={eCx} cy={eCy} R={endR} />
                 </g>
               )}
