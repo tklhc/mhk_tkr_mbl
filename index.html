@@ -3,8 +3,138 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#080d14">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="MİHENK TR">
 <title>MİHENK Teknik Resim - Kesici Takım Çizim Sistemi</title>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Rajdhani:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+<script>
+// ─── PWA: Inline Manifest + Service Worker ───
+(function() {
+  // Generate SVG icon as data URI
+  const iconSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+    <rect width="512" height="512" rx="80" fill="#080d14"/>
+    <rect x="20" y="20" width="472" height="472" rx="60" fill="#0c1220" stroke="#e8922a" stroke-width="4"/>
+    <text x="256" y="200" text-anchor="middle" font-family="Arial,sans-serif" font-size="72" font-weight="900" fill="#e8922a" letter-spacing="8">MİHENK</text>
+    <text x="256" y="270" text-anchor="middle" font-family="Arial,sans-serif" font-size="36" font-weight="600" fill="#6e88a4" letter-spacing="4">TEKNİK RESİM</text>
+    <line x1="100" y1="310" x2="412" y2="310" stroke="#2a4060" stroke-width="2"/>
+    <rect x="120" y="330" width="272" height="8" rx="4" fill="#3a8fd4" opacity="0.6"/>
+    <circle cx="256" cy="400" r="50" fill="none" stroke="#e8922a" stroke-width="4"/>
+    <line x1="256" y1="355" x2="256" y2="445" stroke="#cc2222" stroke-width="1" stroke-dasharray="8,2,2,2"/>
+    <line x1="211" y1="400" x2="301" y2="400" stroke="#cc2222" stroke-width="1" stroke-dasharray="8,2,2,2"/>
+    <text x="256" y="410" text-anchor="middle" font-family="Arial,sans-serif" font-size="28" font-weight="700" fill="#d4dce8">⌀D</text>
+  </svg>`;
+  const iconBlob = new Blob([iconSVG], { type: 'image/svg+xml' });
+  const iconURL = URL.createObjectURL(iconBlob);
+
+  // Create 192px and 512px PNG icons from SVG via canvas
+  function createPNGIcon(size) {
+    return new Promise((resolve) => {
+      const canvas = document.createElement('canvas');
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d');
+      const img = new Image();
+      img.onload = () => {
+        ctx.drawImage(img, 0, 0, size, size);
+        resolve(canvas.toDataURL('image/png'));
+      };
+      img.onerror = () => resolve(null);
+      img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(iconSVG);
+    });
+  }
+
+  async function initPWA() {
+    const icon192 = await createPNGIcon(192);
+    const icon512 = await createPNGIcon(512);
+
+    // Web App Manifest
+    const manifest = {
+      name: "MİHENK Teknik Resim - Kesici Takım Çizim Sistemi",
+      short_name: "MİHENK TR",
+      description: "Kesici takım teknik resim çizim uygulaması",
+      start_url: location.href,
+      scope: location.href.substring(0, location.href.lastIndexOf('/') + 1),
+      display: "standalone",
+      orientation: "any",
+      background_color: "#080d14",
+      theme_color: "#080d14",
+      icons: [
+        { src: icon192 || iconURL, sizes: "192x192", type: icon192 ? "image/png" : "image/svg+xml", purpose: "any maskable" },
+        { src: icon512 || iconURL, sizes: "512x512", type: icon512 ? "image/png" : "image/svg+xml", purpose: "any maskable" }
+      ]
+    };
+    const manifestBlob = new Blob([JSON.stringify(manifest)], { type: 'application/json' });
+    const manifestURL = URL.createObjectURL(manifestBlob);
+    const link = document.createElement('link');
+    link.rel = 'manifest';
+    link.href = manifestURL;
+    document.head.appendChild(link);
+
+    // Apple touch icon
+    const appleLink = document.createElement('link');
+    appleLink.rel = 'apple-touch-icon';
+    appleLink.href = icon192 || iconURL;
+    document.head.appendChild(appleLink);
+
+    // Service Worker (minimal, for installability)
+    const swCode = `
+      const CACHE_NAME = 'mihenk-tr-v2';
+      const ASSETS = [self.location.href.replace(/\\/sw\\.js.*/, '')];
+
+      self.addEventListener('install', (e) => {
+        e.waitUntil(
+          caches.open(CACHE_NAME).then((cache) => {
+            return cache.addAll(ASSETS).catch(() => {});
+          })
+        );
+        self.skipWaiting();
+      });
+
+      self.addEventListener('activate', (e) => {
+        e.waitUntil(
+          caches.keys().then((names) => {
+            return Promise.all(
+              names.filter((n) => n !== CACHE_NAME).map((n) => caches.delete(n))
+            );
+          })
+        );
+        self.clients.claim();
+      });
+
+      self.addEventListener('fetch', (e) => {
+        e.respondWith(
+          fetch(e.request).catch(() => caches.match(e.request))
+        );
+      });
+    `;
+    const swBlob = new Blob([swCode], { type: 'application/javascript' });
+    const swURL = URL.createObjectURL(swBlob);
+
+    if ('serviceWorker' in navigator) {
+      try {
+        // Try real sw.js file first (most reliable)
+        await navigator.serviceWorker.register('./sw.js');
+      } catch (e1) {
+        try {
+          // Fallback: blob-based SW
+          await navigator.serviceWorker.register(swURL, { scope: location.href.substring(0, location.href.lastIndexOf('/') + 1) });
+        } catch (e2) {
+          console.log('SW registration skipped:', e2.message);
+        }
+      }
+    }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initPWA);
+  } else {
+    initPWA();
+  }
+})();
+</script>
 <style>
 :root {
   --bg-base:       #080d14;
