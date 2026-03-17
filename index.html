@@ -29,14 +29,24 @@
   --panel-w:       288px;
 }
 * { margin: 0; padding: 0; box-sizing: border-box; }
-body { overflow: hidden; -webkit-overflow-scrolling: touch; background: var(--bg-base); }
-input, select, button { font-size: 16px; }
+html { height: 100%; height: -webkit-fill-available; }
+body { overflow: hidden; -webkit-overflow-scrolling: touch; background: var(--bg-base); height: 100vh; height: 100dvh; }
+input, select, button { font-size: 16px; -webkit-appearance: none; }
 @media (min-width: 900px) { input, select, button { font-size: inherit; } }
+/* Mobile safe areas */
+@supports (padding: env(safe-area-inset-bottom)) {
+  body { padding-bottom: env(safe-area-inset-bottom); }
+}
 ::-webkit-scrollbar { width: 3px; }
 ::-webkit-scrollbar-track { background: var(--bg-panel); }
 ::-webkit-scrollbar-thumb { background: var(--border-hi); border-radius: 2px; }
 input:focus, select:focus { outline: none; border-color: var(--accent) !important; box-shadow: 0 0 0 1px rgba(232,146,42,0.12) !important; }
 input[type=number]::-webkit-inner-spin-button { opacity: 0.3; }
+/* Mobile touch targets */
+@media (max-width: 899px) {
+  button { min-height: 32px; }
+  input, select { min-height: 36px; }
+}
 .cad-area {
   background-color: #f7f9fb;
   background-image:
@@ -51,6 +61,7 @@ input[type=number]::-webkit-inner-spin-button { opacity: 0.3; }
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
 </head>
 <body>
 <div id="root"></div>
@@ -113,6 +124,12 @@ const DEFAULT_PARAMS = {
   customerMode: false,  // müşteri modunda iç detaylar gizlenir
   stamp: "",            // "": yok, "ONAYLANDI", "TASLAK", "REVİZYON", "İPTAL"
   stampDate: "",        // damga tarihi
+  // Notlar (baloncuk)
+  notes: [],            // [{text, x, y}] — çizim üzerine not balonları
+  // Müşteri & Sipariş
+  customerName: "",
+  orderNo: "",
+  deliveryDate: "",
   // Colors
   colShank: "#c8ccd2",
   colNeck: "#b0b5bc",
@@ -816,7 +833,39 @@ function BottomBlock({ params, x, y, w, scaleText }) {
 
       {/* Kaplama bölümü */}
       <text x={aX + 6} y={y + h * 0.50 + 9} fontSize={4.2} fill="#4a6080" fontWeight="700" letterSpacing="1.5">KAPLAMA</text>
-      <text x={aX + 6} y={y + h * 0.50 + 28} fontSize={9.5} fill="#0a1525" fontWeight="900">{params.coating || "—"}</text>
+      <text x={aX + 6} y={y + h * 0.50 + 22} fontSize={9.5} fill="#0a1525" fontWeight="900">{params.coating || "—"}</text>
+
+      {/* Müşteri / Sipariş bilgisi (varsa) */}
+      {(params.customerName || params.orderNo) && (<>
+        {LN(aX, y + h * 0.72, x + w, y + h * 0.72, 0.3, "#b0b8c0")}
+        {params.customerName && <text x={aX + 6} y={y + h * 0.72 + 6} fontSize={3.2} fill="#4a6080" fontWeight="600">Müşteri: <tspan fill="#0a1525" fontWeight="800">{params.customerName}</tspan></text>}
+        {params.orderNo && <text x={aX + 6} y={y + h * 0.72 + 12} fontSize={3.2} fill="#4a6080" fontWeight="600">Sipariş: <tspan fill="#0a1525" fontWeight="800">{params.orderNo}</tspan></text>}
+        {params.deliveryDate && <text x={aX + 6} y={y + h * 0.72 + 18} fontSize={3} fill="#4a6080" fontWeight="600">Teslim: <tspan fill="#0a1525" fontWeight="700">{params.deliveryDate}</tspan></text>}
+      </>)}
+
+      {/* Mini QR Tanımlayıcı */}
+      {(() => {
+        const qx = x + w - 20, qy = y + h - 20, qs = 18;
+        const str = (params.toolName || "") + (params.orderNo || "");
+        if (!str) return null;
+        let hash = 0;
+        for (let i = 0; i < str.length; i++) hash = ((hash << 5) - hash + str.charCodeAt(i)) | 0;
+        const cells = [];
+        const grid = 7;
+        const cs = qs / grid;
+        for (let gy = 0; gy < grid; gy++) {
+          for (let gx = 0; gx < grid; gx++) {
+            // Corner finder patterns
+            const isCorner = (gx < 3 && gy < 3) || (gx >= grid - 3 && gy < 3) || (gx < 3 && gy >= grid - 3);
+            const isBorder = isCorner && (gx === 0 || gx === 2 || gx === grid-1 || gx === grid-3 || gy === 0 || gy === 2 || gy === grid-1 || gy === grid-3);
+            const isCenter = isCorner && gx % 2 === 1 && gy % 2 === 1;
+            const bit = (hash >> ((gy * grid + gx) % 31)) & 1;
+            const on = isCorner ? (isBorder || isCenter) : bit;
+            if (on) cells.push(<rect key={`q${gy}-${gx}`} x={qx + gx * cs} y={qy + gy * cs} width={cs - 0.2} height={cs - 0.2} fill="#1a1a2a" />);
+          }
+        }
+        return <g><rect x={qx - 1} y={qy - 1} width={qs + 2} height={qs + 2} fill="#fff" stroke="#ddd" strokeWidth={0.3} rx={0.5} />{cells}</g>;
+      })()}
 
     </g>
   );
@@ -871,9 +920,57 @@ function NIT({ label, value, onChange, min, max, step = 1, unit = "mm", tolVal, 
   );
 }
 
+// ─── TOOL LIBRARY PANEL ─────────────────────────────────
+function LibraryPanel({ params, setParams, INP }) {
+  const SB = { padding: "9px 12px 11px 14px", background: "var(--bg-raised)", borderLeft: "2px solid var(--accent)", borderBottom: "1px solid var(--border-dim)" };
+  const getLib = () => { try { return JSON.parse(localStorage.getItem("mihenk-lib") || "[]"); } catch { return []; } };
+  const [lib, setLib] = useState(getLib);
+  const [search, setSearch] = useState("");
+  const saveLib = (newLib) => { localStorage.setItem("mihenk-lib", JSON.stringify(newLib)); setLib(newLib); };
+  const filtered = search ? lib.filter(t => (t.toolName||"").toLowerCase().includes(search.toLowerCase()) || (t.material||"").toLowerCase().includes(search.toLowerCase())) : lib;
+
+  return (
+    <div style={SB}>
+      <button onClick={() => {
+        const name = params.toolName || "İsimsiz";
+        const idx = lib.findIndex(t => t.toolName === name);
+        let nl; if (idx >= 0) { nl = [...lib]; nl[idx] = { ...params, savedAt: new Date().toISOString() }; } else { nl = [...lib, { ...params, savedAt: new Date().toISOString() }]; }
+        saveLib(nl);
+      }}
+        style={{ width: "100%", background: "var(--accent)", border: "none", borderRadius: 3, padding: "6px 0", color: "#fff", fontSize: 10, cursor: "pointer", fontFamily: "var(--mono)", fontWeight: 700, marginBottom: 6 }}>
+        💾 "{params.toolName}" KAYDET
+      </button>
+      <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="🔍 Takım ara..." style={{ ...INP, fontSize: 10, marginBottom: 6 }} />
+      <div style={{ fontSize: 8, color: "var(--text-lo)", fontFamily: "var(--mono)", marginBottom: 4 }}>{lib.length} takım kayıtlı</div>
+      <div style={{ maxHeight: 180, overflowY: "auto" }}>
+        {filtered.length === 0 && <div style={{ fontSize: 9, color: "var(--text-lo)", fontFamily: "var(--mono)", padding: 8, textAlign: "center" }}>{lib.length === 0 ? "Henüz kayıt yok" : "Sonuç bulunamadı"}</div>}
+        {filtered.map((t, i) => (
+          <div key={i} style={{ display: "flex", alignItems: "center", gap: 4, padding: "4px 6px", marginBottom: 2, background: "var(--bg-input)", borderRadius: 3, border: "1px solid var(--border-dim)", cursor: "pointer" }}
+            onClick={() => setParams(p => ({ ...p, ...t }))}>
+            <div style={{ flex: 1, overflow: "hidden" }}>
+              <div style={{ fontSize: 10, color: "var(--text-hi)", fontFamily: "var(--mono)", fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{t.toolName}</div>
+              <div style={{ fontSize: 8, color: "var(--text-lo)", fontFamily: "var(--mono)" }}>⌀{t.D}×{t.L} · {t.z}Z · {t.material}</div>
+            </div>
+            <button onClick={(e) => { e.stopPropagation(); const nl = lib.filter((_, j) => j !== i); saveLib(nl); }}
+              style={{ background: "transparent", border: "none", color: "var(--red)", fontSize: 11, cursor: "pointer", padding: "0 4px", flexShrink: 0 }}>✕</button>
+          </div>
+        ))}
+      </div>
+      {lib.length > 0 && (
+        <div style={{ borderTop: "1px solid var(--border-dim)", marginTop: 6, paddingTop: 6, display: "flex", gap: 4 }}>
+          <button onClick={() => { const b = new Blob(["\uFEFF" + JSON.stringify(lib, null, 2)], { type: "application/json" }); const a = document.createElement("a"); a.href = URL.createObjectURL(b); a.download = "mihenk-kutuphane.json"; a.click(); }}
+            style={{ flex: 1, background: "var(--bg-surface)", border: "1px solid var(--border-mid)", borderRadius: 3, padding: "4px 0", color: "var(--text-mid)", fontSize: 8.5, cursor: "pointer", fontFamily: "var(--mono)" }}>📤 Dışa Aktar</button>
+          <button onClick={() => { const inp = document.createElement("input"); inp.type = "file"; inp.accept = ".json"; inp.onchange = (e) => { const f = e.target.files[0]; if (!f) return; const r = new FileReader(); r.onload = (ev) => { try { const d = JSON.parse(ev.target.result); if (Array.isArray(d)) saveLib([...lib, ...d]); } catch {} }; r.readAsText(f); }; inp.click(); }}
+            style={{ flex: 1, background: "var(--bg-surface)", border: "1px solid var(--border-mid)", borderRadius: 3, padding: "4px 0", color: "var(--text-mid)", fontSize: 8.5, cursor: "pointer", fontFamily: "var(--mono)" }}>📥 İçe Aktar</button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function Panel({ params, setParams, isMobile, showPanel, onClose }) {
   const u = useCallback((k, v) => setParams((p) => ({ ...p, [k]: v })), [setParams]);
-  const [openSec, setOpenSec] = useState({ geo: true, cool: false, show: false, col: false, doc: false, cust: false, step: true });
+  const [openSec, setOpenSec] = useState({ geo: true, cool: false, show: false, col: false, doc: false, notes: false, cust: false, lib: false, step: true });
   const togSec = useCallback((k) => setOpenSec((s) => ({ ...s, [k]: !s[k] })), []);
 
   const SH = (label, key, icon = "▸") => {
@@ -913,11 +1010,11 @@ function Panel({ params, setParams, isMobile, showPanel, onClose }) {
 
   return (
     <div style={{
-      width: isMobile ? "85vw" : "var(--panel-w)",
-      maxWidth: isMobile ? 360 : "var(--panel-w)",
+      width: isMobile ? "88vw" : "var(--panel-w)",
+      maxWidth: isMobile ? 380 : "var(--panel-w)",
       background: "var(--bg-panel)",
       borderRight: "1px solid var(--border-mid)",
-      height: "100vh",
+      height: isMobile ? "100dvh" : "100vh",
       display: "flex",
       flexDirection: "column",
       flexShrink: 0,
@@ -1141,6 +1238,25 @@ function Panel({ params, setParams, isMobile, showPanel, onClose }) {
           </div>
         </div>}
 
+        {/* NOTLAR (Balon) */}
+        {SH("Notlar", "notes", "◉")}
+        {openSec.notes && <div style={SB}>
+          <div style={{ fontSize: 8, color: "var(--text-lo)", fontFamily: "var(--mono)", marginBottom: 5 }}>Çizim üzerine numaralı not balonları ekle. Sürükle ile taşı.</div>
+          {(params.notes || []).map((note, i) => (
+            <div key={i} style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: 4 }}>
+              <span style={{ width: 18, height: 18, borderRadius: "50%", background: "#d32f2f", color: "#fff", fontSize: 10, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontFamily: "var(--mono)" }}>{i + 1}</span>
+              <input type="text" value={note.text} onChange={(e) => { const v = e.target.value; setParams(p => ({ ...p, notes: p.notes.map((n, j) => j === i ? { ...n, text: v } : n) })); }}
+                placeholder="Not yazın..." style={{ ...INP, flex: 1, fontSize: 10 }} />
+              <button onClick={() => setParams(p => ({ ...p, notes: p.notes.filter((_, j) => j !== i) }))}
+                style={{ background: "transparent", border: "1px solid var(--red)", borderRadius: 2, padding: "1px 5px", color: "var(--red)", fontSize: 9, cursor: "pointer", fontFamily: "var(--mono)", flexShrink: 0 }}>✕</button>
+            </div>
+          ))}
+          <button onClick={() => setParams(p => ({ ...p, notes: [...(p.notes || []), { text: "Not " + ((p.notes || []).length + 1), x: 60 + (p.notes || []).length * 20, y: 160 }] }))}
+            style={{ width: "100%", background: "transparent", border: "1px dashed var(--border-hi)", borderRadius: 3, padding: "5px 0", color: "var(--accent)", fontSize: 9, cursor: "pointer", fontFamily: "var(--mono)", fontWeight: 700, letterSpacing: 1 }}>
+            + NOT EKLE
+          </button>
+        </div>}
+
         {/* MÜŞTERİ & ONAY */}
         {SH("Müşteri & Onay", "cust", "✦")}
         {openSec.cust && <div style={SB}>
@@ -1152,6 +1268,24 @@ function Panel({ params, setParams, isMobile, showPanel, onClose }) {
             <div>
               <div style={{ fontSize: 10.5, color: params.customerMode ? "var(--text-hi)" : "var(--text-mid)", fontFamily: "var(--mono)", cursor: "pointer", fontWeight: 600 }}>Müşteri Modu</div>
               <div style={{ fontSize: 8, color: "var(--text-lo)", fontFamily: "var(--mono)" }}>İç detayları (tel, e-posta) gizler</div>
+            </div>
+          </div>
+
+          {/* Müşteri/Sipariş bilgileri */}
+          <div style={{ borderTop: "1px solid var(--border-dim)", paddingTop: 7, marginBottom: 6 }}>
+            <div style={{ marginBottom: 5 }}>
+              <label style={LBL}>Müşteri Adı</label>
+              <input type="text" value={params.customerName||""} onChange={(e) => u("customerName", e.target.value)} placeholder="ör: ABC Makina" style={INP} />
+            </div>
+            <div style={{ display: "flex", gap: 5, marginBottom: 5 }}>
+              <div style={{ flex: 1 }}>
+                <label style={LBL}>Sipariş No</label>
+                <input type="text" value={params.orderNo||""} onChange={(e) => u("orderNo", e.target.value)} placeholder="ör: SIP-2026-001" style={INP} />
+              </div>
+              <div style={{ flex: 1 }}>
+                <label style={LBL}>Teslim Tarihi</label>
+                <input type="date" value={params.deliveryDate||""} onChange={(e) => u("deliveryDate", e.target.value)} style={{...INP, fontSize: 10}} />
+              </div>
             </div>
           </div>
 
@@ -1239,6 +1373,10 @@ function Panel({ params, setParams, isMobile, showPanel, onClose }) {
           </div>
         </div>}
 
+
+        {/* TAKIM KÜTÜPHANESİ */}
+        {SH("Takım Kütüphanesi", "lib", "◆")}
+        {openSec.lib && <LibraryPanel params={params} setParams={setParams} INP={INP} />}
 
       </div>{/* end scroll */}
     </div>
@@ -1329,6 +1467,16 @@ function generateCSVTemplate() {
 
 // İlk açılışta şablon verilerini yükle
 function getInitialBatch() { return parseCSV(generateCSVTemplate()); }
+
+// .xlsx dosyasını parseCSV uyumlu CSV metnine dönüştür
+function parseXlsx(arrayBuffer) {
+  if (!window.XLSX) return [];
+  const X = window.XLSX;
+  const wb = X.read(arrayBuffer, { type: "array" });
+  const ws = wb.Sheets[wb.SheetNames[0]];
+  const csv = X.utils.sheet_to_csv(ws, { FS: ";" });
+  return parseCSV(csv);
+}
 
 // ─── 3D PREVIEW — Gerçekçi Freze Geometrisi ─────────────
 function ThreeDView({ params }) {
@@ -1555,6 +1703,70 @@ function ThreeDView({ params }) {
   );
 }
 
+// ─── EXCEL EXPORT (.xlsx — SheetJS) ─────────────────────
+function downloadXlsx(headers, rows, filename, sheetName) {
+  if (!window.XLSX) { alert("Excel kütüphanesi yüklenemedi."); return; }
+  const X = window.XLSX;
+  const data = [headers, ...rows];
+  const ws = X.utils.aoa_to_sheet(data);
+  // Kolon genişlikleri — başlık uzunluğuna göre
+  ws["!cols"] = headers.map((h, i) => {
+    let max = h.length;
+    rows.forEach(r => { const v = String(r[i] || ""); if (v.length > max) max = v.length; });
+    return { wch: Math.min(Math.max(max + 2, 8), 30) };
+  });
+  const wb = X.utils.book_new();
+  X.utils.book_append_sheet(wb, ws, sheetName || "Sayfa1");
+  X.writeFile(wb, filename);
+}
+
+function downloadTemplateXlsx() {
+  const headers = [
+    "Takım Adı","Takım Tipi","Çap (D)","Sap Çapı (d)","Toplam Boy (L)",
+    "Kesici Boy (l1)","Boğaz Boyu (l2)","Diş Sayısı","Helis Açısı","Çekirdek Çapı",
+    "Malzeme","Kaplama","Boğaz Çapı","Geçiş Açısı","Köşe R","Pah Boyu",
+    "Uç Açısı","Soğutma","Soğutma Adet","Tol D","Tol d","Tol l1",
+    "KD1 Çap","KD1 Boy","KD1 Açı","KD1 Tol Çap","KD1 Tol Boy",
+    "KD2 Çap","KD2 Boy","KD2 Açı","KD2 Tol Çap","KD2 Tol Boy",
+    "KD3 Çap","KD3 Boy","KD3 Açı","KD3 Tol Çap","KD3 Tol Boy"
+  ];
+  const pad = (a) => { while(a.length < headers.length) a.push(""); return a; };
+  const rows = [
+    pad(["MHK-E10x75-4Z","Düz Freze",10,10,75,25,0,4,30,6,"Karbür","TiAlN",8.5,45,0,0,140,"Hayır",2,"h6","h6","±0.05"]),
+    pad(["MHK-E10x100-4Z-N","Düz Freze",10,10,100,30,12,4,30,6,"Karbür","TiAlN",8.5,45,0,0,140,"Hayır",2,"h6","h6","±0.05"]),
+    pad(["MHK-B8x60-2Z","Küre Freze",8,8,60,20,0,2,30,5,"Karbür","TiAlN","","",0,0,"","Hayır",2,"h6","h6","±0.1"]),
+    pad(["MHK-R12x75-4Z-R1","Radyüs Freze",12,12,75,30,0,4,35,7,"Karbür","TiAlN","","",1,0,"","Hayır",2,"±0.005","h5","±0.02"]),
+    pad(["MHK-C10x60-4Z-P3","Pah Freze",10,10,60,20,0,4,30,6,"Karbür","TiAlN","","",0,3,"","Hayır",2,"h6","h6","±0.05"]),
+    pad(["MHK-D8x80-2Z","Matkap",8,8,80,50,0,2,30,4,"Karbür","TiAlN","","",0,0,140,"Evet",2,"h6","h6","±0.1"]),
+    pad(["MHK-SD10-14x90","Kademeli Matkap",14,12,90,30,0,2,30,5,"Karbür","TiAlN","","",0,0,140,"Hayır",2,"","h6","",10,15,140,"±0.01","±0.01",14,15,90,"±0.01","±0.01"]),
+    pad(["MHK-SD12-16-20x90-3KD","Kademeli Matkap",20,12,90,45,0,2,30,6,"Karbür","TiAlN","","",0,0,140,"Hayır",2,"","h6","",12,15,140,"±0.01","",16,15,90,"±0.005","±0.01",20,15,90,"±0.005","±0.01"]),
+  ];
+  downloadXlsx(headers, rows, "mihenk-takim-sablonu.xlsx", "Şablon");
+}
+
+function downloadReportXlsx(batch, lib) {
+  const items = batch.length > 1 ? batch : lib.length > 0 ? lib : [];
+  if (items.length === 0) { alert("Rapor için toplu liste veya kütüphanede kayıt olmalı."); return; }
+  const headers = [
+    "Takım Adı","Takım Tipi","Çap (D)","Sap Çapı (d)","Toplam Boy (L)","Kesici Boy (l1)",
+    "Boğaz Boyu (l2)","Diş Sayısı","Helis Açısı","Çekirdek Çapı","Malzeme","Kaplama",
+    "Boğaz Çapı","Geçiş Açısı","Köşe R","Pah Boyu","Uç Açısı","Soğutma","Soğutma Adet",
+    "Tol D","Tol d","Tol l1","Müşteri","Sipariş No","Teslim Tarihi","Onay","Revizyon","Kayıt Tarihi"
+  ];
+  const tipNames = {flat:"Düz Freze",ballnose:"Küre Freze",bullnose:"Radyüs Freze",chamfer:"Pah Freze",drill:"Matkap",stepdrill:"Kademeli Matkap"};
+  const rows = items.map(p => [
+    p.toolName||"", tipNames[p.toolType]||p.toolType||"",
+    p.D||"", p.d||"", p.L||"", p.l1||"", p.l2||"",
+    p.z||"", p.helix||"", p.dCore||"", p.material||"", p.coating||"",
+    p.neckDia||"", p.neckAngle||"", p.rCorner||"", p.chamferSize||"", p.pointAngle||"",
+    p.coolantHole?"Evet":"Hayır", p.coolantCount||"",
+    p.tolD||"", p.told||"", p.toll1||"",
+    p.customerName||"", p.orderNo||"", p.deliveryDate||"",
+    p.stamp||"", p.revision||"", p.savedAt||""
+  ]);
+  downloadXlsx(headers, rows, `mihenk-rapor-${new Date().toISOString().slice(0,10)}.xlsx`, "Rapor");
+}
+
 // DXF Export — generates 2D DXF from tool parameters
 function generateDXF(params) {
   let { D, d, L, l1, l2, z, toolType, neckDia, neckAngle, dCore, rCorner, chamferSize, pointAngle } = params;
@@ -1775,7 +1987,7 @@ function App() {
   const eCy = da.y + da.h * 0.42;
 
   const BTN = (label, onClick, color, hov) => (
-    <button onClick={onClick} style={{ background: color, border: "none", borderRadius: 3, padding: isMobile ? "5px 8px" : "4px 13px", color: "#fff", fontSize: isMobile ? 10 : 10.5, cursor: "pointer", fontFamily: "var(--mono)", fontWeight: 600, letterSpacing: 0.5, display: "flex", alignItems: "center", gap: 3 }}
+    <button onClick={onClick} style={{ background: color, border: "none", borderRadius: 3, padding: isMobile ? "6px 7px" : "4px 13px", color: "#fff", fontSize: isMobile ? 11 : 10.5, cursor: "pointer", fontFamily: "var(--mono)", fontWeight: 600, letterSpacing: 0.5, display: "flex", alignItems: "center", gap: 3, minHeight: isMobile ? 32 : "auto", flexShrink: 0 }}
       onMouseOver={(e) => e.currentTarget.style.background = hov}
       onMouseOut={(e) => e.currentTarget.style.background = color}>
       {label}
@@ -1783,7 +1995,7 @@ function App() {
   );
 
   return (
-    <div style={{ display: "flex", height: "100vh", fontFamily: "var(--mono)", background: "var(--bg-base)" }}>
+    <div style={{ display: "flex", height: "100vh", height: "100dvh", fontFamily: "var(--mono)", background: "var(--bg-base)" }}>
 
       {!isMobile && <Panel params={params} setParams={setParams} isMobile={false} showPanel={true} onClose={() => {}} />}
       {isMobile && <Panel params={params} setParams={setParams} isMobile={true} showPanel={showPanel} onClose={() => setShowPanel(false)} />}
@@ -1796,38 +2008,35 @@ function App() {
 
         {/* ── TOOLBAR ── */}
         <div style={{
-          display: "flex", alignItems: "center", gap: isMobile ? 3 : 5,
-          padding: isMobile ? "4px 8px" : "5px 12px",
+          display: "flex", alignItems: "center", gap: isMobile ? 4 : 5,
+          padding: isMobile ? "5px 6px" : "5px 12px",
           background: "var(--bg-base)",
           borderBottom: "1px solid var(--border-mid)",
-          flexWrap: "nowrap",
+          flexWrap: "wrap",
           flexShrink: 0,
         }}>
-          {/* Accent left stripe */}
-          <div style={{ position: "absolute", left: isMobile ? 0 : "var(--panel-w)", top: 0, width: 0, height: 0 }} />
-
           {isMobile && (
-            <button onClick={() => setShowPanel(true)} style={{ background: "var(--bg-surface)", border: "1px solid var(--border-hi)", borderRadius: 3, padding: "5px 9px", color: "var(--text-hi)", fontSize: 14, cursor: "pointer", lineHeight: 1, flexShrink: 0 }}>☰</button>
+            <button onClick={() => setShowPanel(true)} style={{ background: "var(--bg-surface)", border: "1px solid var(--border-hi)", borderRadius: 3, padding: "6px 10px", color: "var(--text-hi)", fontSize: 16, cursor: "pointer", lineHeight: 1, flexShrink: 0, minHeight: 34 }}>☰</button>
           )}
 
-          {/* View toggle — CAD style segmented */}
+          {/* View toggle */}
           <div style={{ display: "flex", background: "var(--bg-surface)", border: "1px solid var(--border-hi)", borderRadius: 3, overflow: "hidden", flexShrink: 0 }}>
             {[["all","TÜMÜ"],["side","YAN"],["end","UÇ"],["3d","3D"]].map(([v,lbl]) => (
               <button key={v} onClick={() => setView(v)} style={{
                 background: view === v ? "var(--accent)" : "transparent",
                 border: "none",
                 borderRight: v !== "3d" ? "1px solid var(--border-hi)" : "none",
-                padding: isMobile ? "4px 8px" : "4px 14px",
+                padding: isMobile ? "6px 10px" : "4px 14px",
                 color: view === v ? "#fff" : "var(--text-mid)",
-                fontSize: isMobile ? 9 : 9.5, cursor: "pointer", fontFamily: "var(--mono)",
-                fontWeight: 700, letterSpacing: 1.5, transition: "background 0.12s",
+                fontSize: 9.5, cursor: "pointer", fontFamily: "var(--mono)",
+                fontWeight: 700, letterSpacing: 1.5, minHeight: isMobile ? 32 : "auto",
               }}>{lbl}</button>
             ))}
           </div>
 
-          <div style={{ flex: 1 }} />
+          {!isMobile && <div style={{ flex: 1 }} />}
 
-          {/* Status readout — desktop only */}
+          {/* Status — desktop only */}
           {!isMobile && (
             <div style={{ fontSize: 9, color: "var(--text-lo)", fontFamily: "var(--mono)", letterSpacing: 0.5, marginRight: 4, whiteSpace: "nowrap" }}>
               <span style={{ color: "var(--text-mid)" }}>{calc.text}</span>
@@ -1838,7 +2047,18 @@ function App() {
             </div>
           )}
 
-          {/* Export buttons — unified style */}
+          {isMobile && <div style={{ flex: 1 }} />}
+
+          {/* Mobile compact info badge */}
+          {isMobile && (
+            <div style={{ fontSize: 8.5, color: "var(--accent2)", fontFamily: "var(--mono)", fontWeight: 600, whiteSpace: "nowrap" }}>
+              ⌀{params.D}×{params.L} · {params.z}Z
+            </div>
+          )}
+
+          {/* Export buttons — second row on mobile */}
+          {isMobile && <div style={{ width: "100%", height: 0 }} />}
+          <div style={{ display: "flex", gap: isMobile ? 3 : 5, alignItems: "center", flexWrap: "nowrap", overflowX: isMobile ? "auto" : "visible", WebkitOverflowScrolling: "touch", flexShrink: 0, ...(isMobile ? { width: "100%", paddingBottom: 2 } : {}) }}>
           {BTN(isMobile ? "📄" : "PDF", () => {
             const svgEl = document.getElementById("teknik-svg");
             if (!svgEl) return;
@@ -1878,36 +2098,49 @@ function App() {
             URL.revokeObjectURL(url);
           }, "#4a1a4a", "#6a2a6a")}
 
-          {/* CSV Import */}
-          {BTN(isMobile ? "📥" : "CSV İçe", () => document.getElementById("csv-import").click(), "#0a3a5a", "#0e4a6a")}
-          <input id="csv-import" type="file" accept=".csv,.txt" style={{ display: "none" }} onChange={(e) => {
+          {/* İçe Al (CSV + XLSX) */}
+          {BTN(isMobile ? "📥" : "İçe Al", () => document.getElementById("file-import").click(), "#0a3a5a", "#0e4a6a")}
+          <input id="file-import" type="file" accept=".csv,.txt,.xlsx,.xls" style={{ display: "none" }} onChange={(e) => {
             const file = e.target.files[0]; if (!file) return;
-            const reader = new FileReader();
-            reader.onload = (ev) => {
-              const items = parseCSV(ev.target.result);
-              if (items.length > 0) { setBatch(items); setBatchIdx(0); setParams(p => ({ ...p, ...items[0] })); }
-              else alert("CSV dosyası okunamadı veya boş.");
-            };
-            reader.readAsText(file, "UTF-8");
+            const isExcel = /\.xlsx?$/i.test(file.name);
+            if (isExcel) {
+              const reader = new FileReader();
+              reader.onload = (ev) => {
+                const items = parseXlsx(ev.target.result);
+                if (items.length > 0) { setBatch(items); setBatchIdx(0); setParams(p => ({ ...p, ...items[0] })); }
+                else alert("Excel dosyası okunamadı veya boş.");
+              };
+              reader.readAsArrayBuffer(file);
+            } else {
+              const reader = new FileReader();
+              reader.onload = (ev) => {
+                const items = parseCSV(ev.target.result);
+                if (items.length > 0) { setBatch(items); setBatchIdx(0); setParams(p => ({ ...p, ...items[0] })); }
+                else alert("CSV dosyası okunamadı veya boş.");
+              };
+              reader.readAsText(file, "UTF-8");
+            }
             e.target.value = "";
           }} />
 
-          {/* CSV Template Download */}
-          {BTN(isMobile ? "📋" : "Şablon", () => {
-            const blob = new Blob(["\uFEFF" + generateCSVTemplate()], { type: "text/csv;charset=utf-8" });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement("a"); a.href = url; a.download = "mihenk-takim-sablonu.csv"; a.click();
-            URL.revokeObjectURL(url);
-          }, "#2a2a2a", "#3a3a3a")}
+          {/* Şablon İndir (.xlsx) */}
+          {BTN(isMobile ? "📋" : "Şablon", () => downloadTemplateXlsx(), "#2a2a2a", "#3a3a3a")}
 
-        </div>
+          {/* Excel Rapor (.xlsx) */}
+          {BTN(isMobile ? "📊" : "Rapor", () => {
+            const lib = (() => { try { return JSON.parse(localStorage.getItem("mihenk-lib") || "[]"); } catch { return []; } })();
+            downloadReportXlsx(batch, lib);
+          }, "#1a3a1a", "#2a4a2a")}
+          </div>{/* end export buttons row */}
+
+        </div>{/* end toolbar */}
 
         {/* ── BATCH NAVIGATION BAR ── */}
         {batch.length > 1 && (
           <div style={{
-            display: "flex", alignItems: "center", gap: 6,
-            padding: "4px 12px", background: "linear-gradient(90deg, rgba(58,143,212,0.12), rgba(232,146,42,0.08))",
-            borderBottom: "1px solid var(--border-mid)", flexShrink: 0,
+            display: "flex", alignItems: "center", gap: isMobile ? 4 : 6,
+            padding: isMobile ? "4px 8px" : "4px 12px", background: "linear-gradient(90deg, rgba(58,143,212,0.12), rgba(232,146,42,0.08))",
+            borderBottom: "1px solid var(--border-mid)", flexShrink: 0, flexWrap: isMobile ? "wrap" : "nowrap",
           }}>
             <span style={{ fontSize: 9, color: "var(--accent2)", fontFamily: "var(--mono)", fontWeight: 700 }}>
               TOPLU: {batchIdx + 1} / {batch.length}
@@ -2063,6 +2296,22 @@ function App() {
 
               {/* Unified Bottom Block — param table + title block */}
               <BottomBlock params={params} x={da.x + da.w * (1 - params.bbWidth / 100)} y={svgH - 92} w={da.w * (params.bbWidth / 100)} scaleText={calc.text} />
+
+              {/* ── BALON NOTLARI ── */}
+              {(params.notes || []).map((note, i) => {
+                const nx = note.x || (da.x + 30 + i * 25);
+                const ny = note.y || (da.y + da.h - 30);
+                return (
+                  <Draggable key={`note-${i}`} id={`note-${i}`} offsets={dimOff} setOffsets={setDimOff}>
+                    <g>
+                      <circle cx={nx} cy={ny} r={5} fill="#fff" stroke="#d32f2f" strokeWidth={0.5} />
+                      <text x={nx} y={ny + 1.8} textAnchor="middle" fontSize={4} fontFamily="'IBM Plex Mono',monospace" fill="#d32f2f" fontWeight="800">{i + 1}</text>
+                      <line x1={nx + 5} y1={ny} x2={nx + 12} y2={ny - 5} stroke="#d32f2f" strokeWidth={0.3} />
+                      <text x={nx + 13} y={ny - 5} fontSize={3} fontFamily="'IBM Plex Mono',monospace" fill="#d32f2f" fontWeight="600">{note.text}</text>
+                    </g>
+                  </Draggable>
+                );
+              })}
 
               {/* ── ONAY DAMGASI — çizim alanı sol alt ── */}
               {params.stamp && (() => {
