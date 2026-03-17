@@ -820,7 +820,7 @@ function BottomBlock({ params, x, y, w, scaleText }) {
         <text x={fX + fW / 2} y={y + h * 0.82} textAnchor="middle" fontSize={3.2} fill="#6a8aaa" fontWeight="500">San. Tic. Ltd. Şti.</text>
       </>)}
 
-      {/* ════ KOL 3: Alet Adı + Kaplama ════ */}
+      {/* ════ KOL 3: Alet Adı + Müşteri & Sipariş ════ */}
       {/* Alet adı bölümü */}
       <rect x={aX + 0.5} y={y + 0.5} width={aW - 1} height={h * 0.50 - 0.5} fill="#eaf0f8"/>
       <text x={aX + 6} y={y + 9} fontSize={4.2} fill="#4a6080" fontWeight="700" letterSpacing="1.5">ALET ADI</text>
@@ -831,17 +831,16 @@ function BottomBlock({ params, x, y, w, scaleText }) {
       })()}
       {LN(aX, y + h * 0.50, x + w, y + h * 0.50, 0.6, "#8a9ab0")}
 
-      {/* Kaplama bölümü */}
-      <text x={aX + 6} y={y + h * 0.50 + 9} fontSize={4.2} fill="#4a6080" fontWeight="700" letterSpacing="1.5">KAPLAMA</text>
-      <text x={aX + 6} y={y + h * 0.50 + 22} fontSize={9.5} fill="#0a1525" fontWeight="900">{params.coating || "—"}</text>
-
-      {/* Müşteri / Sipariş bilgisi (varsa) */}
-      {(params.customerName || params.orderNo) && (<>
-        {LN(aX, y + h * 0.72, x + w, y + h * 0.72, 0.3, "#b0b8c0")}
-        {params.customerName && <text x={aX + 6} y={y + h * 0.72 + 6} fontSize={3.2} fill="#4a6080" fontWeight="600">Müşteri: <tspan fill="#0a1525" fontWeight="800">{params.customerName}</tspan></text>}
-        {params.orderNo && <text x={aX + 6} y={y + h * 0.72 + 12} fontSize={3.2} fill="#4a6080" fontWeight="600">Sipariş: <tspan fill="#0a1525" fontWeight="800">{params.orderNo}</tspan></text>}
-        {params.deliveryDate && <text x={aX + 6} y={y + h * 0.72 + 18} fontSize={3} fill="#4a6080" fontWeight="600">Teslim: <tspan fill="#0a1525" fontWeight="700">{params.deliveryDate}</tspan></text>}
-      </>)}
+      {/* Müşteri / Sipariş / Onay bölümü */}
+      <text x={aX + 6} y={y + h * 0.50 + 9} fontSize={4.2} fill="#4a6080" fontWeight="700" letterSpacing="1.5">MÜŞTERİ & SİPARİŞ</text>
+      <text x={aX + 6} y={y + h * 0.50 + 21} fontSize={3.8} fill="#4a6080" fontWeight="600">Müşteri:</text>
+      <text x={aX + 30} y={y + h * 0.50 + 21} fontSize={4.5} fill="#0a1525" fontWeight="800">{params.customerName || "—"}</text>
+      {LN(aX + 4, y + h * 0.50 + 24, aX + aW - 4, y + h * 0.50 + 24, 0.2, "#d0d8e0")}
+      <text x={aX + 6} y={y + h * 0.50 + 31} fontSize={3.8} fill="#4a6080" fontWeight="600">Sipariş No:</text>
+      <text x={aX + 38} y={y + h * 0.50 + 31} fontSize={4.5} fill="#0a1525" fontWeight="800">{params.orderNo || "—"}</text>
+      {LN(aX + 4, y + h * 0.50 + 34, aX + aW - 4, y + h * 0.50 + 34, 0.2, "#d0d8e0")}
+      <text x={aX + 6} y={y + h * 0.50 + 41} fontSize={3.8} fill="#4a6080" fontWeight="600">Teslim:</text>
+      <text x={aX + 30} y={y + h * 0.50 + 41} fontSize={4.5} fill="#0a1525" fontWeight="800">{params.deliveryDate || "—"}</text>
 
       {/* Mini QR Tanımlayıcı */}
       {(() => {
