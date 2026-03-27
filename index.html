@@ -216,6 +216,7 @@ const DEFAULT_PARAMS = {
   l2: 0, toll2: "",
   neckDia: 8.5, tolNeck: "",
   neckAngle: 45,
+  cutNeckAngle: 90,  // kesici→boğaz geçiş açısı (90=dik step, <90=konik)
   z: 4,
   helix: 30,
   helixHand: "Sağ",
@@ -398,7 +399,8 @@ function CL({ x1, y1, x2, y2 }) {
 
 
 function SideView({ params, ox, oy, scale, dimOff, setDimOff }) {
-  let { D, d, L, l1, l2, z, helix, toolType, rCorner, chamferSize, dCore, neckDia, neckAngle } = params;
+  let { D, d, L, l1, l2, z, helix, toolType, rCorner, chamferSize, dCore, neckDia, neckAngle, cutNeckAngle } = params;
+  cutNeckAngle = cutNeckAngle ?? 90;
 
   // For stepdrill: override l1 from steps, disable neck
   if (toolType === "stepdrill") {
@@ -421,16 +423,23 @@ function SideView({ params, ox, oy, scale, dimOff, setDimOff }) {
   const nD = l2 > 0 ? neckDia : D;
   const hN = (nD / 2) * s;
 
-  // Transition zone: angled taper from shank to neck — NOT part of l2
+  // Transition zone 1: şaft → boğaz (sol taraf)
   const aRad = (neckAngle * Math.PI) / 180;
   const transDx = (l2 > 0 && d > nD) ? ((d - nD) / 2) / Math.tan(aRad) * s : 0;
 
-  // Layout: sLeft──[shank]──sRight──[transition tDx]──tRight──[neck l2]──nRight──[cutting l1]──tipR
-  const sL = tL - cL - nL - transDx;
+  // Transition zone 2: boğaz → kesici (sağ taraf) — YENİ
+  const cutAngleRad = (cutNeckAngle * Math.PI) / 180;
+  const cutTransDx = (l2 > 0 && D > nD && cutNeckAngle < 89.5)
+    ? ((D - nD) / 2) / Math.tan(cutAngleRad) * s
+    : 0;
+
+  // Layout: sLeft──[shank]──sRight──[transDx]──tRight──[neck l2]──nRight──[cutTransDx]──cLeft──[cutting l1]──tipR
+  const sL = tL - cL - nL - transDx - cutTransDx;
   const sLeft = ox - tL / 2;
   const sRight = sLeft + Math.max(sL, 0);
-  const tRight = sRight + transDx;  // end of transition
-  const nRight = tRight + nL;       // end of neck = start of cutting
+  const tRight = sRight + transDx;   // end of şaft→boğaz transition
+  const nRight = tRight + nL;        // end of neck
+  const cLeft0 = nRight + cutTransDx; // actual cutting start (after boğaz→kesici taper)
   const tipR = sLeft + tL;
 
   const e = [];
@@ -480,7 +489,7 @@ function SideView({ params, ox, oy, scale, dimOff, setDimOff }) {
   }
 
   // ── Cutting section ──
-  const cLeft = nRight;
+  const cLeft = cLeft0;
   const isDrill = toolType === "drill" || toolType === "stepdrill";
   let tipDrillDx = 0; // matkap uç uzunluğu — ölçü hattı hesabında kullanılır
 
@@ -649,12 +658,37 @@ function SideView({ params, ox, oy, scale, dimOff, setDimOff }) {
     );
   }
 
-  // ── Cutting↔neck transition (step if diameters differ) ──
-  if (l2 > 0 && Math.abs(hD - hN) > 0.2) {
-    e.push(
-      <line key="cn-t" x1={nRight} y1={oy - hN} x2={nRight} y2={oy - hD} stroke={DS.outline} strokeWidth={DS.oW} />,
-      <line key="cn-b" x1={nRight} y1={oy + hN} x2={nRight} y2={oy + hD} stroke={DS.outline} strokeWidth={DS.oW} />
-    );
+  // ── Boğaz → Kesici geçiş (sağ taraf) ──
+  if (l2 > 0 && D > nD) {
+    if (cutTransDx > 0.3) {
+      // Konik geçiş fill
+      const cutTransFill = `M ${nRight} ${oy - hN} L ${cLeft} ${oy - hD} L ${cLeft} ${oy + hD} L ${nRight} ${oy + hN} Z`;
+      e.push(<path key="ct-fill" d={cutTransFill} fill="url(#gCut)" stroke="none" opacity={0.85} />);
+      e.push(
+        <line key="ct-t" x1={nRight} y1={oy - hN} x2={cLeft} y2={oy - hD} stroke={DS.outline} strokeWidth={DS.oW} />,
+        <line key="ct-b" x1={nRight} y1={oy + hN} x2={cLeft} y2={oy + hD} stroke={DS.outline} strokeWidth={DS.oW} />
+      );
+      // Açı annotasyonu
+      if (params.showDimAngles) {
+        const angLblX2 = nRight + cutTransDx * 0.5;
+        e.push(
+          <path key="ct-arc" d={`M ${nRight + 0.5} ${oy + hN - 0.5} L ${nRight + cutTransDx * 0.35} ${oy + hN + (hD - hN) * 0.35}`}
+            fill="none" stroke="#e65100" strokeWidth={0.3} />,
+          <Draggable id="ct-ang-lbl" offsets={dimOff} setOffsets={setDimOff}>
+            <text x={angLblX2} y={oy + hD + 6}
+              fontSize={5.0} fontFamily="'IBM Plex Mono', monospace" fill="#e65100" fontWeight="700" textAnchor="middle">
+              {cutNeckAngle}°
+            </text>
+          </Draggable>
+        );
+      }
+    } else {
+      // 90° step (cutNeckAngle = 90 veya D ≈ nD)
+      e.push(
+        <line key="cn-t" x1={nRight} y1={oy - hN} x2={nRight} y2={oy - hD} stroke={DS.outline} strokeWidth={DS.oW} />,
+        <line key="cn-b" x1={nRight} y1={oy + hN} x2={nRight} y2={oy + hD} stroke={DS.outline} strokeWidth={DS.oW} />
+      );
+    }
   } else if (l2 === 0 && Math.abs(hD - hd) > 0.2) {
     e.push(
       <line key="cs-t" x1={sRight} y1={oy - hd} x2={sRight} y2={oy - hD} stroke={DS.outline} strokeWidth={DS.oW} />,
@@ -1213,7 +1247,10 @@ function Panel({ params, setParams, isMobile, showPanel, onClose }) {
               <>
                 <NIT label="Boğaz (l₂)" value={params.l2} onChange={(v) => u("l2", v)} min={0} max={200} step={0.5} tolVal={params.toll2} onTolChange={(v) => u("toll2", v)} />
                 {params.l2 > 0 && <NIT label="Boğaz Çapı" value={params.neckDia} onChange={(v) => u("neckDia", v)} min={0.5} max={params.d} step={0.1} tolVal={params.tolNeck} onTolChange={(v) => u("tolNeck", v)} />}
-                {params.l2 > 0 && <NI label="Geçiş Açısı" value={params.neckAngle} onChange={(v) => u("neckAngle", v)} min={10} max={90} step={5} unit="°" />}
+                {params.l2 > 0 && <NI label="Şaft→Boğaz" value={params.neckAngle} onChange={(v) => u("neckAngle", v)} min={10} max={90} step={5} unit="°" />}
+                {params.l2 > 0 && params.D > params.neckDia && (
+                  <NI label="Kesici→Boğaz" value={params.cutNeckAngle ?? 90} onChange={(v) => u("cutNeckAngle", v)} min={10} max={90} step={5} unit="°" />
+                )}
               </>
             )}
             {params.toolType === "stepdrill" && (
@@ -1655,7 +1692,8 @@ function ThreeDView({ params }) {
     if (!toolGroup || !T) return;
     while(toolGroup.children.length){const c=toolGroup.children[0];if(c.geometry)c.geometry.dispose();if(c.material){if(Array.isArray(c.material))c.material.forEach(m=>m.dispose());else c.material.dispose();}toolGroup.remove(c);}
 
-    let { D, d, L, l1, l2, z, helix, toolType, neckDia, neckAngle, dCore, rCorner, chamferSize, pointAngle } = params;
+    let { D, d, L, l1, l2, z, helix, toolType, neckDia, neckAngle, cutNeckAngle, dCore, rCorner, chamferSize, pointAngle } = params;
+    cutNeckAngle = cutNeckAngle ?? 90;
     if (toolType==="stepdrill"){const stps=params.steps||[];l1=stps.reduce((s,st)=>s+(st.len||0),0);l2=0;D=stps.length>0?Math.max(...stps.map(s=>s.dia)):D;}
     const sc = 3/L;
     const hD=D/2*sc, hd=d/2*sc, tL=L*sc, cL=l1*sc, nL=l2*sc;
@@ -1663,7 +1701,9 @@ function ThreeDView({ params }) {
     const cR=Math.min(dCore/2*sc, hD*0.65);
     const aRad=(neckAngle*Math.PI)/180;
     const transDx=(l2>0&&d>nDia)?((d-nDia)/2)/Math.tan(aRad)*sc:0;
-    const sL=tL-cL-nL-transDx;
+    const cutAngleRad3d=(cutNeckAngle*Math.PI)/180;
+    const cutTransDx=(l2>0&&D>nDia&&cutNeckAngle<89.5)?((D-nDia)/2)/Math.tan(cutAngleRad3d)*sc:0;
+    const sL=tL-cL-nL-transDx-cutTransDx;
     const hRad=(helix||30)*Math.PI/180;
     const nF=z||4;
     const aSeg=96;
@@ -1760,10 +1800,12 @@ function ThreeDView({ params }) {
       const cap=new T.Mesh(new T.CircleGeometry(hd,aSeg),matS); cap.rotation.x=Math.PI/2; cap.position.y=curY; toolGroup.add(cap);
       curY+=sL;
     }
-    // Geçiş
+    // Geçiş 1: Şaft → Boğaz
     if (transDx>0.002) { toolGroup.add(new T.Mesh(new T.CylinderGeometry(hN,hd,transDx,aSeg),matN)).position.y=curY+transDx/2; curY+=transDx; }
     // Boyun
     if (nL>0.002) { toolGroup.add(new T.Mesh(new T.CylinderGeometry(hN,hN,nL,aSeg),matN)).position.y=curY+nL/2; curY+=nL; }
+    // Geçiş 2: Boğaz → Kesici (YENİ)
+    if (cutTransDx>0.002) { toolGroup.add(new T.Mesh(new T.CylinderGeometry(hD,hN,cutTransDx,aSeg),matC)).position.y=curY+cutTransDx/2; curY+=cutTransDx; }
 
     const cutStart = curY;
 
@@ -1890,7 +1932,8 @@ function downloadReportXlsx(batch, lib) {
 
 // DXF Export — generates 2D DXF from tool parameters
 function generateDXF(params) {
-  let { D, d, L, l1, l2, z, toolType, neckDia, neckAngle, dCore, rCorner, chamferSize, pointAngle } = params;
+  let { D, d, L, l1, l2, z, toolType, neckDia, neckAngle, cutNeckAngle, dCore, rCorner, chamferSize, pointAngle } = params;
+  cutNeckAngle = cutNeckAngle ?? 90;
   if (toolType === "stepdrill") {
     const stps = params.steps || [];
     l1 = stps.reduce((s, st) => s + (st.len || 0), 0);
@@ -1902,11 +1945,13 @@ function generateDXF(params) {
   const hN = nD / 2;
   const aRad = (neckAngle * Math.PI) / 180;
   const transDx = (l2 > 0 && d > nD) ? ((d - nD) / 2) / Math.tan(aRad) : 0;
-  const sL = L - l1 - l2 - transDx;
+  const cutAngleRadDxf = (cutNeckAngle * Math.PI) / 180;
+  const cutTransDx = (l2 > 0 && D > nD && cutNeckAngle < 89.5) ? ((D - nD) / 2) / Math.tan(cutAngleRadDxf) : 0;
+  const sL = L - l1 - l2 - transDx - cutTransDx;
 
   // Coordinate system: origin at shank left, Y up
   const sLeft = 0, sRight = sL, tRight = sRight + transDx, nRight = tRight + l2;
-  const cLeft = nRight, tipR = L;
+  const cLeft = nRight + cutTransDx, tipR = L;
 
   const entities = [];
   let handle = 100;
@@ -1938,6 +1983,14 @@ function generateDXF(params) {
     addLine(tRight, hN, nRight, hN, "CONTOUR", 7);
     addLine(tRight, -hN, nRight, -hN, "CONTOUR", 7);
   }
+  // Boğaz → Kesici geçişi (konik)
+  if (l2 > 0 && cutTransDx > 0) {
+    addLine(nRight, hN, cLeft, hD, "CONTOUR", 7);
+    addLine(nRight, -hN, cLeft, -hD, "CONTOUR", 7);
+  } else if (l2 > 0 && D > nD) {
+    addLine(nRight, hN, nRight, hD, "CONTOUR", 7);
+    addLine(nRight, -hN, nRight, -hD, "CONTOUR", 7);
+  }
   // Cutting section
   if (toolType === "drill") {
     const ptAng = (pointAngle || 140) * Math.PI / 180;
@@ -1959,11 +2012,8 @@ function generateDXF(params) {
     addLine(cLeft, -hD, tipR, -hD, "CONTOUR", 7);
     addLine(tipR, -hD, tipR, hD, "CONTOUR", 7);
   }
-  // Steps between sections
-  if (l2 > 0 && Math.abs(hD - hN) > 0.01) {
-    addLine(nRight, hN, nRight, hD, "CONTOUR", 7);
-    addLine(nRight, -hN, nRight, -hD, "CONTOUR", 7);
-  } else if (l2 === 0 && Math.abs(hD - hd) > 0.01) {
+  // Şaft→Kesici step (l2=0 durumu)
+  if (l2 === 0 && Math.abs(hD - hd) > 0.01) {
     addLine(sRight, hd, sRight, hD, "CONTOUR", 7);
     addLine(sRight, -hd, sRight, -hD, "CONTOUR", 7);
   }
