@@ -637,7 +637,7 @@ function SideView({ params, ox, oy, scale, dimOff, setDimOff }) {
 
       // Dim step 0 — length with mm (uç açısı hariç, sadece silindirik kısım)
       e.push(<DimH key="dst0" x1={body0Left} x2={body0Right} y={oy - maxHR} label={`${st0.len} mm`} tol={st0.tolLen} side="top" offset={5} dragId="dst0" offsets={dimOff} setOffsets={setDimOff} />);
-      e.push(<DimV key="dsd0" y1={oy - hr0} y2={oy + hr0} x={(body0Left + body0Right) / 2} label={`⌀${st0.dia}`} tol={st0.tolDia} side="right" offset={5} dragId="dsd0" offsets={dimOff} setOffsets={setDimOff} />);
+      e.push(<DimV key="dsd0" y1={oy - hr0} y2={oy + hr0} x={curX} label={`⌀${st0.dia}`} tol={st0.tolDia} side="right" offset={35} dragId="dsd0" offsets={dimOff} setOffsets={setDimOff} />);
 
       let prevHR = hr0;
       curX = body0Left;
@@ -688,7 +688,7 @@ function SideView({ params, ox, oy, scale, dimOff, setDimOff }) {
 
         // Dims with mm
         e.push(<DimH key={`dst${si}`} x1={bodyLeft} x2={curX} y={oy - maxHR} label={`${st.len} mm`} tol={st.tolLen} side="top" offset={5 + si * 7} dragId={`dst${si}`} offsets={dimOff} setOffsets={setDimOff} />);
-        e.push(<DimV key={`dsd${si}`} y1={oy - hr} y2={oy + hr} x={bodyLeft} label={`⌀${st.dia}`} tol={st.tolDia} side="left" offset={5 + si * 5} dragId={`dsd${si}`} offsets={dimOff} setOffsets={setDimOff} />);
+        e.push(<DimV key={`dsd${si}`} y1={oy - hr} y2={oy + hr} x={(bodyLeft + bodyRight) / 2} label={`⌀${st.dia}`} tol={st.tolDia} side="left" offset={5} dragId={`dsd${si}`} offsets={dimOff} setOffsets={setDimOff} />);
 
         prevHR = hr;
         curX = bodyLeft;
