@@ -2442,31 +2442,8 @@ function App() {
             <span style={{ fontSize: 9, color: "var(--accent)", fontFamily: "var(--mono)", fontWeight: 600, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
               {params.toolName}
             </span>
-            {/* Toplu PNG Export */}
+            {/* Toplu PNG → ZIP Export */}
             <button onClick={async () => {
-              for (let i = 0; i < batch.length; i++) {
-                setBatchIdx(i); setParams(p => ({ ...p, ...batch[i] })); setDimOff({});
-                await new Promise(r => setTimeout(r, 400));
-                const svgEl = document.getElementById("teknik-svg"); if (!svgEl) continue;
-                const clone = svgEl.cloneNode(true); clone.setAttribute("xmlns","http://www.w3.org/2000/svg");
-                const svgData = new XMLSerializer().serializeToString(clone);
-                const canvas = document.createElement("canvas"); const vb = svgEl.viewBox.baseVal;
-                canvas.width = vb.width * 6; canvas.height = vb.height * 6;
-                const ctx = canvas.getContext("2d"); const img = new Image();
-                await new Promise((resolve) => {
-                  img.onload = () => { ctx.fillStyle = "#fff"; ctx.fillRect(0,0,canvas.width,canvas.height); ctx.drawImage(img,0,0,canvas.width,canvas.height);
-                    const a = document.createElement("a"); a.href = canvas.toDataURL("image/png"); a.download = `${batch[i].toolName || "takim-" + (i+1)}.png`; a.click(); resolve(); };
-                  img.src = "data:image/svg+xml;base64," + btoa(unescape(encodeURIComponent(svgData)));
-                });
-                await new Promise(r => setTimeout(r, 200));
-              }
-            }}
-              style={{ background: "#3a1a08", border: "none", borderRadius: 3, padding: "3px 10px", color: "#fff", fontSize: 9, cursor: "pointer", fontFamily: "var(--mono)", fontWeight: 700, letterSpacing: 0.5 }}>
-              TOPLU PNG
-            </button>
-            {/* Toplu PDF Export — ZIP, dialog yok */}
-            <button onClick={async () => {
-              // JSZip yoksa yükle
               if (!window.JSZip) {
                 await new Promise((res, rej) => {
                   const s = document.createElement('script');
@@ -2475,117 +2452,48 @@ function App() {
                   document.head.appendChild(s);
                 });
               }
-
-              // Canvas → minimal tek sayfalık PDF Blob (jsPDF gereksiz)
-              function canvasToPdfBlob(canvas) {
-                return new Promise(resolve => {
-                  canvas.toBlob(imgBlob => {
-                    const fr = new FileReader();
-                    fr.onload = () => {
-                      const imgBytes = new Uint8Array(fr.result);
-                      // A4 landscape pt (1pt = 1/72 inch, 297x210mm)
-                      const pw = 841.89, ph = 595.28;
-                      const iw = canvas.width, ih = canvas.height;
-                      // fit image to page with 10pt margin
-                      const margin = 10;
-                      const maxW = pw - margin * 2, maxH = ph - margin * 2;
-                      const scale = Math.min(maxW / iw, maxH / ih);
-                      const dw = iw * scale, dh = ih * scale;
-                      const dx = (pw - dw) / 2, dy = (ph - dh) / 2;
-
-                      // Build PDF objects
-                      const enc = (s) => Array.from(new TextEncoder().encode(s));
-                      let buf = [], offsets = [];
-                      const add = (s) => { offsets.push(buf.length); buf.push(...enc(s)); };
-                      const addRaw = (arr) => { offsets.push(buf.length); buf.push(...arr); };
-
-                      // header
-                      buf.push(...enc('%PDF-1.4\n'));
-
-                      // obj 1: catalog
-                      add(`1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n`);
-                      // obj 2: pages
-                      add(`2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n`);
-                      // obj 3: page
-                      add(`3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${pw.toFixed(2)} ${ph.toFixed(2)}] /Contents 4 0 R /Resources << /XObject << /Im1 5 0 R >> >> >>\nendobj\n`);
-                      // obj 4: content stream
-                      const stream = `q ${dw.toFixed(2)} 0 0 ${dh.toFixed(2)} ${dx.toFixed(2)} ${(ph-dy-dh).toFixed(2)} cm /Im1 Do Q`;
-                      const streamBytes = new TextEncoder().encode(stream);
-                      add(`4 0 obj\n<< /Length ${streamBytes.length} >>\nstream\n`);
-                      buf.push(...streamBytes);
-                      buf.push(...enc('\nendstream\nendobj\n'));
-                      // obj 5: image XObject
-                      const imgHeader = `5 0 obj\n<< /Type /XObject /Subtype /Image /Width ${iw} /Height ${ih} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${imgBytes.length} >>\nstream\n`;
-                      offsets.push(buf.length);
-                      buf.push(...enc(imgHeader));
-                      buf.push(...imgBytes);
-                      buf.push(...enc('\nendstream\nendobj\n'));
-
-                      // xref
-                      const xrefOffset = buf.length;
-                      buf.push(...enc(`xref\n0 6\n0000000000 65535 f \n`));
-                      // offsets 1-5 (skip index 0 which is header)
-                      for (let k = 1; k <= 5; k++) {
-                        buf.push(...enc(String(offsets[k-1]).padStart(10,'0') + ' 00000 n \n'));
-                      }
-                      buf.push(...enc(`trailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF\n`));
-
-                      resolve(new Blob([new Uint8Array(buf)], { type: 'application/pdf' }));
-                    };
-                    fr.readAsArrayBuffer(imgBlob);
-                  }, 'image/jpeg', 0.92);
-                });
-              }
-
               const zip = new JSZip();
               for (let i = 0; i < batch.length; i++) {
                 setBatchIdx(i); setParams(p => ({ ...p, ...batch[i] })); setDimOff({});
-                await new Promise(r => setTimeout(r, 450));
+                await new Promise(r => setTimeout(r, 400));
                 const svgEl = document.getElementById('teknik-svg'); if (!svgEl) continue;
                 const clone = svgEl.cloneNode(true); clone.setAttribute('xmlns','http://www.w3.org/2000/svg');
                 const svgData = new XMLSerializer().serializeToString(clone);
-                const vb = svgEl.viewBox.baseVal;
-                const canvas = document.createElement('canvas');
-                canvas.width = vb.width * 4; canvas.height = vb.height * 4;
+                const canvas = document.createElement('canvas'); const vb = svgEl.viewBox.baseVal;
+                canvas.width = vb.width * 6; canvas.height = vb.height * 6;
                 const ctx = canvas.getContext('2d');
-                await new Promise((res, rej) => {
+                await new Promise((resolve) => {
                   const img = new Image();
-                  img.onload = () => { ctx.fillStyle='#fff'; ctx.fillRect(0,0,canvas.width,canvas.height); ctx.drawImage(img,0,0,canvas.width,canvas.height); res(); };
-                  img.onerror = rej;
+                  img.onload = () => {
+                    ctx.fillStyle = '#fff'; ctx.fillRect(0,0,canvas.width,canvas.height);
+                    ctx.drawImage(img,0,0,canvas.width,canvas.height);
+                    canvas.toBlob(blob => {
+                      const name = (batch[i].toolName || ('takim-'+(i+1))).replace(/[/\\?%*:|"<>]/g,'-');
+                      zip.file(`${name}.png`, blob);
+                      resolve();
+                    }, 'image/png');
+                  };
                   img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
                 });
-                const pdfBlob = await canvasToPdfBlob(canvas);
-                const name = (batch[i].toolName || ('takim-'+(i+1))).replace(/[/\\?%*:|"<>]/g,'-');
-                zip.file(`${name}.pdf`, pdfBlob);
               }
               const zipBlob = await zip.generateAsync({ type:'blob' });
-              const fileName = `mihenk-teknik-resimler-${new Date().toISOString().slice(0,10)}.zip`;
+              const fileName = `mihenk-png-${new Date().toISOString().slice(0,10)}.zip`;
               if (window.showSaveFilePicker) {
                 try {
                   const fh = await window.showSaveFilePicker({
                     suggestedName: fileName,
                     types: [{ description: 'ZIP Dosyası', accept: { 'application/zip': ['.zip'] } }]
                   });
-                  const writable = await fh.createWritable();
-                  await writable.write(zipBlob);
-                  await writable.close();
-                } catch (e) {
-                  if (e.name !== 'AbortError') {
-                    const a = document.createElement('a');
-                    a.href = URL.createObjectURL(zipBlob);
-                    a.download = fileName;
-                    a.click(); URL.revokeObjectURL(a.href);
-                  }
+                  const w = await fh.createWritable(); await w.write(zipBlob); await w.close();
+                } catch(e) {
+                  if (e.name !== 'AbortError') { const a=document.createElement('a'); a.href=URL.createObjectURL(zipBlob); a.download=fileName; a.click(); URL.revokeObjectURL(a.href); }
                 }
               } else {
-                const a = document.createElement('a');
-                a.href = URL.createObjectURL(zipBlob);
-                a.download = fileName;
-                a.click(); URL.revokeObjectURL(a.href);
+                const a=document.createElement('a'); a.href=URL.createObjectURL(zipBlob); a.download=fileName; a.click(); URL.revokeObjectURL(a.href);
               }
             }}
-              style={{ background:"#1a2a40", border:"none", borderRadius:3, padding:"3px 10px", color:"#fff", fontSize:9, cursor:"pointer", fontFamily:"var(--mono)", fontWeight:700, letterSpacing:0.5 }}>
-              TOPLU PDF
+              style={{ background: "#3a1a08", border: "none", borderRadius: 3, padding: "3px 10px", color: "#fff", fontSize: 9, cursor: "pointer", fontFamily: "var(--mono)", fontWeight: 700, letterSpacing: 0.5 }}>
+              TOPLU PNG
             </button>
             <button onClick={() => { setBatch([]); setBatchIdx(0); }}
               style={{ background: "transparent", border: "1px solid var(--red)", borderRadius: 3, padding: "2px 8px", color: "var(--red)", fontSize: 9, cursor: "pointer", fontFamily: "var(--mono)", fontWeight: 700 }}>✕</button>
