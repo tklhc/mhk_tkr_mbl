@@ -2464,23 +2464,71 @@ function App() {
               style={{ background: "#3a1a08", border: "none", borderRadius: 3, padding: "3px 10px", color: "#fff", fontSize: 9, cursor: "pointer", fontFamily: "var(--mono)", fontWeight: 700, letterSpacing: 0.5 }}>
               TOPLU PNG
             </button>
-            {/* Toplu PDF Export */}
+            {/* Toplu PDF Export — ZIP */}
             <button onClick={async () => {
+              // Kütüphaneleri dinamik yükle
+              const loadScript = (src) => new Promise((res, rej) => {
+                if (document.querySelector(`script[src="${src}"]`)) return res();
+                const s = document.createElement('script');
+                s.src = src; s.onload = res; s.onerror = rej;
+                document.head.appendChild(s);
+              });
+              try {
+                await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
+                await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js');
+              } catch(e) { alert('Kütüphane yüklenemedi, internet bağlantısını kontrol edin.'); return; }
+
+              const { jsPDF } = window.jspdf;
+              const zip = new JSZip();
+
               for (let i = 0; i < batch.length; i++) {
                 setBatchIdx(i); setParams(p => ({ ...p, ...batch[i] })); setDimOff({});
-                await new Promise(r => setTimeout(r, 400));
-                const svgEl = document.getElementById("teknik-svg"); if (!svgEl) continue;
-                const clone = svgEl.cloneNode(true); clone.setAttribute("width","100%"); clone.setAttribute("height","auto");
+                await new Promise(r => setTimeout(r, 450));
+
+                const svgEl = document.getElementById('teknik-svg');
+                if (!svgEl) continue;
+                const clone = svgEl.cloneNode(true);
+                clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
                 const svgData = new XMLSerializer().serializeToString(clone);
-                const name = batch[i].toolName || ("takim-" + (i + 1));
-                const win = window.open("", "_blank");
-                if (!win) continue;
-                win.document.write(`<!DOCTYPE html><html><head><title>MİHENK - ${name}</title><style>@page{size:A4 landscape;margin:8mm;}body{margin:0;display:flex;justify-content:center;align-items:center;min-height:100vh;background:#fff;}svg{max-width:100%;height:auto;}</style></head><body>${svgData}</body></html>`);
-                win.document.close();
-                await new Promise(r => setTimeout(r, 600));
-                win.print();
-                await new Promise(r => setTimeout(r, 400));
+                const vb = svgEl.viewBox.baseVal;
+
+                // SVG → Canvas
+                const canvas = document.createElement('canvas');
+                canvas.width = vb.width * 5; canvas.height = vb.height * 5;
+                const ctx = canvas.getContext('2d');
+                await new Promise((resolve, reject) => {
+                  const img = new Image();
+                  img.onload = () => {
+                    ctx.fillStyle = '#fff';
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                    resolve();
+                  };
+                  img.onerror = reject;
+                  img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
+                });
+
+                // Canvas → PDF (A4 yatay)
+                const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+                const pdfW = pdf.internal.pageSize.getWidth();
+                const pdfH = pdf.internal.pageSize.getHeight();
+                const aspect = canvas.width / canvas.height;
+                let iW = pdfW - 10, iH = iW / aspect;
+                if (iH > pdfH - 10) { iH = pdfH - 10; iW = iH * aspect; }
+                const ix = (pdfW - iW) / 2, iy = (pdfH - iH) / 2;
+                pdf.addImage(canvas.toDataURL('image/png'), 'PNG', ix, iy, iW, iH);
+
+                const name = (batch[i].toolName || ('takim-' + (i + 1))).replace(/[/\\?%*:|"<>]/g, '-');
+                zip.file(`${name}.pdf`, pdf.output('blob'));
+                await new Promise(r => setTimeout(r, 100));
               }
+
+              const zipBlob = await zip.generateAsync({ type: 'blob' });
+              const a = document.createElement('a');
+              a.href = URL.createObjectURL(zipBlob);
+              a.download = `mihenk-teknik-resimler-${new Date().toISOString().slice(0,10)}.zip`;
+              a.click();
+              URL.revokeObjectURL(a.href);
             }}
               style={{ background: "#1a2a40", border: "none", borderRadius: 3, padding: "3px 10px", color: "#fff", fontSize: 9, cursor: "pointer", fontFamily: "var(--mono)", fontWeight: 700, letterSpacing: 0.5 }}>
               TOPLU PDF
