@@ -1668,6 +1668,7 @@ const CSV_HEADER_MAP = {
   "Köşe R":"rCorner","Pah Boyu":"chamferSize",
   "Uç Açısı":"pointAngle","Soğutma":"coolantHole","Soğutma Adet":"coolantCount",
   "Tol D":"tolD","Tol d":"told","Tol l1":"toll1",
+  "Müşteri Adı":"customerName","Sipariş No":"orderNo","Teslim Tarihi":"deliveryDate",
   "KD1 Çap":"step1_dia","KD1 Boy":"step1_len","KD1 Açı":"step1_angle","KD1 Tol Çap":"step1_tolDia","KD1 Tol Boy":"step1_tolLen",
   "KD2 Çap":"step2_dia","KD2 Boy":"step2_len","KD2 Açı":"step2_angle","KD2 Tol Çap":"step2_tolDia","KD2 Tol Boy":"step2_tolLen",
   "KD3 Çap":"step3_dia","KD3 Boy":"step3_len","KD3 Açı":"step3_angle","KD3 Tol Çap":"step3_tolDia","KD3 Tol Boy":"step3_tolLen",
@@ -1719,6 +1720,7 @@ function generateCSVTemplate() {
     "Kesici Boy (l1)","Boğaz Boyu (l2)","Diş Sayısı","Helis Açısı","Çekirdek Çapı",
     "Malzeme","Kaplama","Boğaz Çapı","Geçiş Açısı","Köşe R","Pah Boyu",
     "Uç Açısı","Soğutma","Soğutma Adet","Tol D","Tol d","Tol l1",
+    "Müşteri Adı","Sipariş No","Teslim Tarihi",
     "KD1 Çap","KD1 Boy","KD1 Açı","KD1 Tol Çap","KD1 Tol Boy",
     "KD2 Çap","KD2 Boy","KD2 Açı","KD2 Tol Çap","KD2 Tol Boy",
     "KD3 Çap","KD3 Boy","KD3 Açı","KD3 Tol Çap","KD3 Tol Boy"
@@ -2003,20 +2005,21 @@ function downloadTemplateXlsx() {
     "Kesici Boy (l1)","Boğaz Boyu (l2)","Diş Sayısı","Helis Açısı","Çekirdek Çapı",
     "Malzeme","Kaplama","Boğaz Çapı","Geçiş Açısı","Köşe R","Pah Boyu",
     "Uç Açısı","Soğutma","Soğutma Adet","Tol D","Tol d","Tol l1",
+    "Müşteri Adı","Sipariş No","Teslim Tarihi",
     "KD1 Çap","KD1 Boy","KD1 Açı","KD1 Tol Çap","KD1 Tol Boy",
     "KD2 Çap","KD2 Boy","KD2 Açı","KD2 Tol Çap","KD2 Tol Boy",
     "KD3 Çap","KD3 Boy","KD3 Açı","KD3 Tol Çap","KD3 Tol Boy"
   ];
   const pad = (a) => { while(a.length < headers.length) a.push(""); return a; };
   const rows = [
-    pad(["MHK-E10x75-4Z","Düz Freze",10,10,75,25,0,4,30,6,"Karbür","TiAlN",8.5,45,0,0,140,"Hayır",2,"h6","h6","±0.05"]),
+    pad(["MHK-E10x75-4Z","Düz Freze",10,10,75,25,0,4,30,6,"Karbür","TiAlN",8.5,45,0,0,140,"Hayır",2,"h6","h6","±0.05","ABC Makina","","",]),
     pad(["MHK-E10x100-4Z-N","Düz Freze",10,10,100,30,12,4,30,6,"Karbür","TiAlN",8.5,45,0,0,140,"Hayır",2,"h6","h6","±0.05"]),
     pad(["MHK-B8x60-2Z","Küre Freze",8,8,60,20,0,2,30,5,"Karbür","TiAlN","","",0,0,"","Hayır",2,"h6","h6","±0.1"]),
     pad(["MHK-R12x75-4Z-R1","Radyüs Freze",12,12,75,30,0,4,35,7,"Karbür","TiAlN","","",1,0,"","Hayır",2,"±0.005","h5","±0.02"]),
     pad(["MHK-C10x60-4Z-P3","Pah Freze",10,10,60,20,0,4,30,6,"Karbür","TiAlN","","",0,3,"","Hayır",2,"h6","h6","±0.05"]),
     pad(["MHK-D8x80-2Z","Matkap",8,8,80,50,0,2,30,4,"Karbür","TiAlN","","",0,0,140,"Evet",2,"h6","h6","±0.1"]),
-    pad(["MHK-SD10-14x90","Kademeli Matkap",14,12,90,30,0,2,30,5,"Karbür","TiAlN","","",0,0,140,"Hayır",2,"","h6","",10,15,140,"±0.01","±0.01",14,15,90,"±0.01","±0.01"]),
-    pad(["MHK-SD12-16-20x90-3KD","Kademeli Matkap",20,12,90,45,0,2,30,6,"Karbür","TiAlN","","",0,0,140,"Hayır",2,"","h6","",12,15,140,"±0.01","",16,15,90,"±0.005","±0.01",20,15,90,"±0.005","±0.01"]),
+    pad(["MHK-SD10-14x90","Kademeli Matkap",14,12,90,30,0,2,30,5,"Karbür","TiAlN","","",0,0,140,"Hayır",2,"","h6","","","","",10,15,140,"±0.01","±0.01",14,15,90,"±0.01","±0.01"]),
+    pad(["MHK-SD12-16-20x90-3KD","Kademeli Matkap",20,12,90,45,0,2,30,6,"Karbür","TiAlN","","",0,0,140,"Hayır",2,"","h6","","","","",12,15,140,"±0.01","",16,15,90,"±0.005","±0.01",20,15,90,"±0.005","±0.01"]),
   ];
   downloadXlsx(headers, rows, "mihenk-takim-sablonu.xlsx", "Şablon");
 }
