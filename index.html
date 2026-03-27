@@ -2500,49 +2500,89 @@ function App() {
               if (!window.JSZip) {
                 await new Promise((res, rej) => { const s=document.createElement('script'); s.src='https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js'; s.onload=res; s.onerror=rej; document.head.appendChild(s); });
               }
-              const canvasToPdfBlob = (canvas) => new Promise(resolve => {
+
+              // Chunk listesini tek Uint8Array'e birleştir
+              const concat = (chunks) => {
+                const total = chunks.reduce((s, c) => s + c.length, 0);
+                const out = new Uint8Array(total);
+                let pos = 0;
+                chunks.forEach(c => { out.set(c, pos); pos += c.length; });
+                return out;
+              };
+
+              const canvasToPdfBlob = (canvas) => new Promise((resolve, reject) => {
                 canvas.toBlob(imgBlob => {
+                  if (!imgBlob) { reject(new Error('toBlob failed')); return; }
                   const fr = new FileReader();
+                  fr.onerror = reject;
                   fr.onload = () => {
-                    const jpg = new Uint8Array(fr.result);
-                    const pw = 841.89, ph = 595.28;
-                    const scale = Math.min((pw-20)/canvas.width, (ph-20)/canvas.height);
-                    const dw = canvas.width*scale, dh = canvas.height*scale;
-                    const dx = (pw-dw)/2, dy = (ph-dh)/2;
-                    const te = s => new TextEncoder().encode(s);
-                    const o1 = te('1 0 obj\n<</Type/Catalog/Pages 2 0 R>>\nendobj\n');
-                    const o2 = te('2 0 obj\n<</Type/Pages/Kids[3 0 R]/Count 1>>\nendobj\n');
-                    const o3 = te(`3 0 obj\n<</Type/Page/Parent 2 0 R/MediaBox[0 0 ${pw.toFixed(2)} ${ph.toFixed(2)}]/Contents 4 0 R/Resources<</XObject<</Im0 5 0 R>>>>>>\nendobj\n`);
-                    const cs = te(`q ${dw.toFixed(2)} 0 0 ${dh.toFixed(2)} ${dx.toFixed(2)} ${(ph-dy-dh).toFixed(2)} cm /Im0 Do Q`);
-                    const o4 = [...te(`4 0 obj\n<</Length ${cs.length}>>\nstream\n`), ...cs, ...te('\nendstream\nendobj\n')];
-                    const o5 = [...te(`5 0 obj\n<</Type/XObject/Subtype/Image/Width ${canvas.width}/Height ${canvas.height}/ColorSpace/DeviceRGB/BitsPerComponent 8/Filter/DCTDecode/Length ${jpg.length}>>\nstream\n`), ...jpg, ...te('\nendstream\nendobj\n')];
-                    const hdr = te('%PDF-1.4\n');
-                    let out=[...hdr], xr=[];
-                    [o1,o2,o3,o4,o5].forEach(o=>{ xr.push(out.length); out.push(...o); });
-                    const xp=out.length;
-                    out.push(...te('xref\n0 6\n0000000000 65535 f \n'));
-                    xr.forEach(x=>out.push(...te(String(x).padStart(10,'0')+' 00000 n \n')));
-                    out.push(...te(`trailer\n<</Size 6/Root 1 0 R>>\nstartxref\n${xp}\n%%EOF`));
-                    resolve(new Blob([new Uint8Array(out)],{type:'application/pdf'}));
+                    try {
+                      const jpg = new Uint8Array(fr.result);
+                      const te = s => new TextEncoder().encode(s);
+                      const pw = 841.89, ph = 595.28;
+                      const sc = Math.min((pw-20)/canvas.width, (ph-20)/canvas.height);
+                      const dw = (canvas.width*sc).toFixed(2), dh = (canvas.height*sc).toFixed(2);
+                      const dx = ((pw-canvas.width*sc)/2).toFixed(2);
+                      const dy = ((ph-canvas.height*sc)/2).toFixed(2);
+
+                      // Chunk'ları biriktir, xref offset'leri hesapla
+                      const chunks = [];
+                      const xr = []; // her objenin byte offseti
+                      let pos = 0;
+
+                      const push = (buf) => { chunks.push(buf); pos += buf.length; };
+
+                      push(te('%PDF-1.4\n'));
+
+                      xr.push(pos);
+                      push(te('1 0 obj\n<</Type/Catalog/Pages 2 0 R>>\nendobj\n'));
+
+                      xr.push(pos);
+                      push(te('2 0 obj\n<</Type/Pages/Kids[3 0 R]/Count 1>>\nendobj\n'));
+
+                      xr.push(pos);
+                      push(te(`3 0 obj\n<</Type/Page/Parent 2 0 R/MediaBox[0 0 ${pw.toFixed(2)} ${ph.toFixed(2)}]/Contents 4 0 R/Resources<</XObject<</Im0 5 0 R>>>>>>\nendobj\n`));
+
+                      const cs = te(`q ${dw} 0 0 ${dh} ${dx} ${dy} cm /Im0 Do Q`);
+                      xr.push(pos);
+                      push(te(`4 0 obj\n<</Length ${cs.length}>>\nstream\n`));
+                      push(cs);
+                      push(te('\nendstream\nendobj\n'));
+
+                      xr.push(pos);
+                      push(te(`5 0 obj\n<</Type/XObject/Subtype/Image/Width ${canvas.width}/Height ${canvas.height}/ColorSpace/DeviceRGB/BitsPerComponent 8/Filter/DCTDecode/Length ${jpg.length}>>\nstream\n`));
+                      push(jpg);
+                      push(te('\nendstream\nendobj\n'));
+
+                      const xrefPos = pos;
+                      push(te('xref\n0 6\n0000000000 65535 f \n'));
+                      xr.forEach(x => push(te(String(x).padStart(10,'0') + ' 00000 n \n')));
+                      push(te(`trailer\n<</Size 6/Root 1 0 R>>\nstartxref\n${xrefPos}\n%%EOF`));
+
+                      resolve(new Blob([concat(chunks)], { type: 'application/pdf' }));
+                    } catch(err) { reject(err); }
                   };
                   fr.readAsArrayBuffer(imgBlob);
-                }, 'image/jpeg', 0.93);
+                }, 'image/jpeg', 0.92);
               });
+
               const zip = new JSZip();
               for (let i = 0; i < batch.length; i++) {
                 setBatchIdx(i); setParams(p=>({...p,...batch[i]})); setDimOff({});
-                await new Promise(r=>setTimeout(r,450));
+                await new Promise(r=>setTimeout(r,500));
                 const svgEl=document.getElementById('teknik-svg'); if(!svgEl) continue;
                 const clone=svgEl.cloneNode(true); clone.setAttribute('xmlns','http://www.w3.org/2000/svg');
                 const svgData=new XMLSerializer().serializeToString(clone);
                 const vb=svgEl.viewBox.baseVal;
                 const canvas=document.createElement('canvas');
-                canvas.width=vb.width*5; canvas.height=vb.height*5;
+                canvas.width=vb.width*4; canvas.height=vb.height*4;
                 const ctx=canvas.getContext('2d');
                 await new Promise((res,rej)=>{ const img=new Image(); img.onload=()=>{ ctx.fillStyle='#fff'; ctx.fillRect(0,0,canvas.width,canvas.height); ctx.drawImage(img,0,0,canvas.width,canvas.height); res(); }; img.onerror=rej; img.src='data:image/svg+xml;base64,'+btoa(unescape(encodeURIComponent(svgData))); });
-                const pdfBlob=await canvasToPdfBlob(canvas);
-                const name=(batch[i].toolName||('takim-'+(i+1))).replace(/[/\\?%*:|"<>]/g,'-');
-                zip.file(`${name}.pdf`, pdfBlob);
+                try {
+                  const pdfBlob = await canvasToPdfBlob(canvas);
+                  const name=(batch[i].toolName||('takim-'+(i+1))).replace(/[/\\?%*:|"<>]/g,'-');
+                  zip.file(`${name}.pdf`, pdfBlob);
+                } catch(err) { console.error('PDF error item', i, err); }
               }
               const zipBlob=await zip.generateAsync({type:'blob'});
               const fileName=`mihenk-pdf-${new Date().toISOString().slice(0,10)}.zip`;
