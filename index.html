@@ -359,8 +359,8 @@ function DimH({ x1, x2, y, label, tol, side = "bottom", offset = 7, dragId, offs
       <polygon points={`${x1},${yL} ${x1 + a},${yL - a * 0.35} ${x1 + a},${yL + a * 0.35}`} stroke="none" />
       <polygon points={`${x2},${yL} ${x2 - a},${yL - a * 0.35} ${x2 - a},${yL + a * 0.35}`} stroke="none" />
       <text x={mid} y={yT} textAnchor="middle" dominantBaseline={side === "top" ? "auto" : "hanging"}
-        fontSize={3.8} fontFamily="'IBM Plex Mono', monospace" fill={DC} stroke="none" fontWeight="600">{label}
-        {tolText && <tspan fontSize={2.6} fill="#cc0000" fontWeight="700" dy={-1.5}> {tolText}</tspan>}
+        fontSize={5.5} fontFamily="'IBM Plex Mono', monospace" fill={DC} stroke="none" fontWeight="700">{label}
+        {tolText && <tspan fontSize={4.0} fill="#cc0000" fontWeight="700" dy={-1.5}> {tolText}</tspan>}
       </text>
     </g>
   );
@@ -384,8 +384,8 @@ function DimV({ y1, y2, x, label, tol, side = "left", offset = 6, dragId, offset
       <polygon points={`${xL},${y1} ${xL - a * 0.35},${y1 + a} ${xL + a * 0.35},${y1 + a}`} stroke="none" />
       <polygon points={`${xL},${y2} ${xL - a * 0.35},${y2 - a} ${xL + a * 0.35},${y2 - a}`} stroke="none" />
       <text x={xT} y={mid} textAnchor="middle" dominantBaseline="central"
-        fontSize={3.8} fontFamily="'IBM Plex Mono', monospace" fill={DC} stroke="none" fontWeight="600"
-        transform={`rotate(-90, ${xT}, ${mid})`}>{label}{tolText && <tspan fontSize={2.6} fill="#cc0000" fontWeight="700"> {tolText}</tspan>}</text>
+        fontSize={5.5} fontFamily="'IBM Plex Mono', monospace" fill={DC} stroke="none" fontWeight="700"
+        transform={`rotate(-90, ${xT}, ${mid})`}>{label}{tolText && <tspan fontSize={4.0} fill="#cc0000" fontWeight="700"> {tolText}</tspan>}</text>
     </g>
   );
   if (dragId && offsets && setOffsets) return <Draggable id={dragId} offsets={offsets} setOffsets={setOffsets} axis="x">{inner}</Draggable>;
@@ -459,7 +459,7 @@ function SideView({ params, ox, oy, scale, dimOff, setDimOff }) {
       <path key="ang-arc" d={`M ${sRight + 0.5} ${oy + hd - 0.5} L ${sRight + transDx * 0.35} ${oy + hd - (hd - hN) * 0.35}`}
         fill="none" stroke="#e65100" strokeWidth={0.3} />,
       <Draggable id="ang-lbl" offsets={dimOff} setOffsets={setDimOff}><text key="ang-lbl" x={angLblX + 1} y={oy + hd + 5}
-        fontSize={3.4} fontFamily="'IBM Plex Mono', monospace" fill="#e65100" fontWeight="700" textAnchor="middle">
+        fontSize={5.0} fontFamily="'IBM Plex Mono', monospace" fill="#e65100" fontWeight="700" textAnchor="middle">
         {neckAngle}°
       </text></Draggable>
     );
@@ -482,6 +482,7 @@ function SideView({ params, ox, oy, scale, dimOff, setDimOff }) {
   // ── Cutting section ──
   const cLeft = nRight;
   const isDrill = toolType === "drill" || toolType === "stepdrill";
+  let tipDrillDx = 0; // matkap uç uzunluğu — ölçü hattı hesabında kullanılır
 
   if (toolType === "stepdrill") {
     // ── Step Drill: Step 1 (smallest) at TIP (right), larger steps toward SHANK (left) ──
@@ -509,7 +510,7 @@ function SideView({ params, ox, oy, scale, dimOff, setDimOff }) {
       if (params.showDimAngles) {
         e.push(
           <Draggable id="stp-pa0" offsets={dimOff} setOffsets={setDimOff}><text key="stp-pa0" x={curX - tipDx0 * 0.5} y={oy + hr0 + 5}
-            fontSize={3.2} fontFamily="'IBM Plex Mono', monospace" fill="#e65100" fontWeight="700">{st0.angle}°</text></Draggable>
+            fontSize={5.0} fontFamily="'IBM Plex Mono', monospace" fill="#e65100" fontWeight="700">{st0.angle}°</text></Draggable>
         );
       }
 
@@ -524,8 +525,8 @@ function SideView({ params, ox, oy, scale, dimOff, setDimOff }) {
         );
       }
 
-      // Dim step 0 — length with mm
-      e.push(<DimH key="dst0" x1={body0Left} x2={curX} y={oy - maxHR} label={`${st0.len} mm`} tol={st0.tolLen} side="top" offset={5} dragId="dst0" offsets={dimOff} setOffsets={setDimOff} />);
+      // Dim step 0 — length with mm (uç açısı hariç, sadece silindirik kısım)
+      e.push(<DimH key="dst0" x1={body0Left} x2={body0Right} y={oy - maxHR} label={`${st0.len} mm`} tol={st0.tolLen} side="top" offset={5} dragId="dst0" offsets={dimOff} setOffsets={setDimOff} />);
       e.push(<DimV key="dsd0" y1={oy - hr0} y2={oy + hr0} x={(body0Left + body0Right) / 2} label={`⌀${st0.dia}`} tol={st0.tolDia} side="right" offset={5} dragId="dsd0" offsets={dimOff} setOffsets={setDimOff} />);
 
       let prevHR = hr0;
@@ -554,7 +555,7 @@ function SideView({ params, ox, oy, scale, dimOff, setDimOff }) {
         if (params.showDimAngles) {
           e.push(
             <Draggable id={`spa-${si}`} offsets={dimOff} setOffsets={setDimOff}><text key={`spa-${si}`} x={curX - transDx * 0.5} y={oy + hr + 5}
-              fontSize={3.0} fontFamily="'IBM Plex Mono', monospace" fill="#e65100" fontWeight="700">{st.angle}°</text></Draggable>
+              fontSize={5.0} fontFamily="'IBM Plex Mono', monospace" fill="#e65100" fontWeight="700">{st.angle}°</text></Draggable>
           );
         }
 
@@ -587,6 +588,7 @@ function SideView({ params, ox, oy, scale, dimOff, setDimOff }) {
     // ── Standard Drill: body + V-tip ──
     const ptAng = (params.pointAngle || 140) * Math.PI / 180;
     const tipDx = hD / Math.tan(ptAng / 2);
+    tipDrillDx = tipDx; // ölçü hattı için kaydet
 
     // Fill body + tip as one path
     const drillFill = `M ${cLeft} ${oy - hD} L ${tipR - tipDx} ${oy - hD} L ${tipR} ${oy} L ${tipR - tipDx} ${oy + hD} L ${cLeft} ${oy + hD} Z`;
@@ -616,7 +618,7 @@ function SideView({ params, ox, oy, scale, dimOff, setDimOff }) {
     if (params.showDimAngles) {
       e.push(
         <Draggable id="pt-ang" offsets={dimOff} setOffsets={setDimOff}><text key="pt-ang" x={tipR - tipDx * 0.6} y={oy + hD + 5}
-          fontSize={3.4} fontFamily="'IBM Plex Mono', monospace" fill="#e65100" fontWeight="700">
+          fontSize={5.0} fontFamily="'IBM Plex Mono', monospace" fill="#e65100" fontWeight="700">
           {params.pointAngle}°
         </text></Draggable>
       );
@@ -710,7 +712,7 @@ function SideView({ params, ox, oy, scale, dimOff, setDimOff }) {
           d={`M ${arcStartX} ${arcStartY} A ${angArcR} ${angArcR} 0 0 1 ${arcEndX} ${arcEndY}`}
           fill="none" stroke="#2e7d32" strokeWidth={0.3} />,
         <Draggable id="hx-lbl" offsets={dimOff} setOffsets={setDimOff}><text key="hx-lbl" x={angX + angArcR * 0.7 + 1} y={angY - angArcR * 0.3}
-          fontSize={3.4} fontFamily="'IBM Plex Mono', monospace" fill="#2e7d32" fontWeight="700">
+          fontSize={5.0} fontFamily="'IBM Plex Mono', monospace" fill="#2e7d32" fontWeight="700">
           {helix}° {isLeftHand ? "L" : "R"}
         </text></Draggable>
       );
@@ -736,9 +738,10 @@ function SideView({ params, ox, oy, scale, dimOff, setDimOff }) {
     e.push(<DimH key="dL" x1={sLeft} x2={tipR} y={dimBase} label={`${L} mm`} tol={params.tolL} side="bottom" offset={toolType === "stepdrill" ? 6 + (params.steps || []).length * 7 + 7 : 14} dragId="dL" offsets={dimOff} setOffsets={setDimOff} />);
   }
   
-  // Cutting l1 (skip for stepdrill)
+  // Cutting l1 (skip for stepdrill) — matkap için uç açısı hariç silindirik kısım
   if (toolType !== "stepdrill" && params.showDiml1) {
-    e.push(<DimH key="dl1" x1={cLeft} x2={tipR} y={dimBase} label={`${l1} mm`} tol={params.toll1} side="bottom" offset={6} dragId="dl1" offsets={dimOff} setOffsets={setDimOff} />);
+    const l1x2 = toolType === "drill" ? tipR - tipDrillDx : tipR;
+    e.push(<DimH key="dl1" x1={cLeft} x2={l1x2} y={dimBase} label={`${l1} mm`} tol={params.toll1} side="bottom" offset={6} dragId="dl1" offsets={dimOff} setOffsets={setDimOff} />);
   }
   // Neck l2 (only the straight part)
   if (l2 > 0 && params.showDiml2) {
@@ -758,7 +761,7 @@ function SideView({ params, ox, oy, scale, dimOff, setDimOff }) {
   }
   // Corner R
   if (toolType === "bullnose" && rCorner > 0 && params.showDimAngles) {
-    e.push(<Draggable id="dR" offsets={dimOff} setOffsets={setDimOff}><text key="dR" x={tipR - coR * 0.3} y={oy + hD + 5} fontSize={3.6} fontFamily="'IBM Plex Mono', monospace" fill={DC} fontWeight="600">R{rCorner}</text></Draggable>);
+    e.push(<Draggable id="dR" offsets={dimOff} setOffsets={setDimOff}><text key="dR" x={tipR - coR * 0.3} y={oy + hD + 5} fontSize={5.5} fontFamily="'IBM Plex Mono', monospace" fill={DC} fontWeight="700">R{rCorner}</text></Draggable>);
   }
 
 
@@ -852,7 +855,7 @@ function EndView({ params, cx, cy, R }) {
       <circle cx={cx - R * Math.cos(da)} cy={cy + R * Math.sin(da)} r={0.9} stroke="none" />
       <circle cx={cx + R * Math.cos(da)} cy={cy - R * Math.sin(da)} r={0.9} stroke="none" />
       <text x={cx + R * Math.cos(da) + 3} y={cy - R * Math.sin(da) - 1.5}
-        fontSize={3.8} fontFamily="'IBM Plex Mono', monospace" fill={DC} stroke="none" fontWeight="600">⌀{D}</text>
+        fontSize={5.5} fontFamily="'IBM Plex Mono', monospace" fill={DC} stroke="none" fontWeight="700">⌀{D}</text>
     </g>
   );
 
@@ -1343,17 +1346,6 @@ function Panel({ params, setParams, isMobile, showPanel, onClose }) {
             <label style={LBL}>Alet Adı</label>
             <input type="text" value={params.toolName} onChange={(e) => u("toolName", e.target.value)} style={INP} />
           </div>
-          <div style={{ display: "flex", gap: 5, marginBottom: 5 }}>
-            {[["material","Malzeme"],["coating","Kaplama"]].map(([k,l]) => (
-              <div key={k} style={{ flex: 1 }}><label style={LBL}>{l}</label><input type="text" value={params[k]} onChange={(e) => u(k,e.target.value)} style={{...INP}} /></div>
-            ))}
-          </div>
-          <div style={{ display: "flex", gap: 5, marginBottom: 5 }}>
-            {[["drawingNo","Çizim No"],["revision","Revizyon"]].map(([k,l]) => (
-              <div key={k} style={{ flex: 1 }}><label style={LBL}>{l}</label><input type="text" value={params[k]} onChange={(e) => u(k,e.target.value)} style={{...INP}} /></div>
-            ))}
-          </div>
-          <div><label style={LBL}>Oluşturan</label><input type="text" value={params.createdBy} onChange={(e) => u("createdBy",e.target.value)} style={INP} /></div>
 
           {/* ── Alt Blok Düzeni ── */}
           <div style={{ borderTop: "1px solid var(--border-dim)", marginTop: 8, paddingTop: 8 }}>
@@ -2402,19 +2394,19 @@ function App() {
 
               {/* Header: logo left, title center */}
               <image href={LOGO_IMG} x={da.x + 4} y={1} width={200} height={25} preserveAspectRatio="xMinYMid meet" />
-              <text x={svgW / 2} y={10} textAnchor="middle" fontSize={3.5} fontFamily="'IBM Plex Mono', monospace" fill="#3a6080" fontWeight="700" letterSpacing="1">MİHENK KESİCİ TAKIM</text>
-              <text x={svgW / 2} y={17} textAnchor="middle" fontSize={2.5} fontFamily="'IBM Plex Mono', monospace" fill="#8aa0b8">{TOOL_TYPES[params.toolType]} — Teknik Resim</text>
+              <text x={svgW / 2} y={11} textAnchor="middle" fontSize={5.5} fontFamily="'IBM Plex Mono', monospace" fill="#3a6080" fontWeight="700" letterSpacing="1">MİHENK KESİCİ TAKIM</text>
+              <text x={svgW / 2} y={19} textAnchor="middle" fontSize={4.0} fontFamily="'IBM Plex Mono', monospace" fill="#8aa0b8">{TOOL_TYPES[params.toolType]} — Teknik Resim</text>
 
               {(view === "all" || view === "side") && (
                 <g>
-                  <text x={sOx} y={da.y + 7} textAnchor="middle" fontSize={2.8} fontFamily="'IBM Plex Mono', monospace" fill="#7a95b0" fontWeight="600">YAN GÖRÜNÜM</text>
+                  <text x={sOx} y={da.y + 8} textAnchor="middle" fontSize={4.5} fontFamily="'IBM Plex Mono', monospace" fill="#7a95b0" fontWeight="700">YAN GÖRÜNÜM</text>
                   <SideView params={params} ox={sOx} oy={sOy} scale={calc.scale} dimOff={dimOff} setDimOff={setDimOff} />
                 </g>
               )}
 
               {(view === "all" || view === "end") && (
                 <g>
-                  <text x={eCx} y={da.y + 7} textAnchor="middle" fontSize={2.8} fontFamily="'IBM Plex Mono', monospace" fill="#7a95b0" fontWeight="600">UÇTAN GÖRÜNÜM</text>
+                  <text x={eCx} y={da.y + 8} textAnchor="middle" fontSize={4.5} fontFamily="'IBM Plex Mono', monospace" fill="#7a95b0" fontWeight="700">UÇTAN GÖRÜNÜM</text>
                   <EndView params={params} cx={eCx} cy={eCy} R={endR} />
                 </g>
               )}
