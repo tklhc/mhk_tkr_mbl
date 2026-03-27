@@ -424,7 +424,7 @@ function DimV({ y1, y2, x, label, tol, side = "left", offset = 6, dragId, offset
 // refDir: referans çizgisinin yönü (+1=sağ, -1=sol)
 // below:  true  → yay AŞAĞI açılır (+y, takım dışına) — geçiş köşelerinde kullan
 //         false → yay YUKARI açılır (-y, takım dışına) — uç noktalarında kullan
-function ArcAngleDim({ cx, cy, aRad, label, arcR = 10, lineLen = 18, refDir = -1, below = true, id, offsets, setOffsets }) {
+function ArcAngleDim({ cx, cy, aRad, label, arcR = 12, lineLen = 20, refDir = -1, below = true, id, offsets, setOffsets }) {
   const yDir = below ? 1 : -1;
   const sweep = below ? 1 : 0;   // CW=1(aşağı açık), CCW=0(yukarı açık)
 
@@ -437,10 +437,9 @@ function ArcAngleDim({ cx, cy, aRad, label, arcR = 10, lineLen = 18, refDir = -1
   const aSx = cx + refDir * arcR, aSy = cy;
   const aEx = cx + refDir * arcR * Math.cos(aRad);
   const aEy = cy + yDir  * arcR  * Math.sin(aRad);
-  // Metin: orta açıda, biraz dışa ötelenmiş
-  const tDist = arcR + 9;
-  const textX = cx + refDir * tDist * Math.cos(aRad / 2);
-  const textY = cy + yDir  * tDist * Math.sin(aRad / 2);
+  // Metin: yay orta açısı yönünde, yayın hemen dışında
+  const textX = cx + refDir * (arcR + 8) * Math.cos(aRad / 2);
+  const textY = cy + yDir  * (arcR + 8) * Math.sin(aRad / 2);
 
   const inner = (
     <g fill="none" stroke="#e65100" strokeWidth={0.8}>
@@ -454,6 +453,35 @@ function ArcAngleDim({ cx, cy, aRad, label, arcR = 10, lineLen = 18, refDir = -1
     </g>
   );
 
+  if (id && offsets && setOffsets) return <Draggable id={id} offsets={offsets} setOffsets={setOffsets}>{inner}</Draggable>;
+  return inner;
+}
+
+// TipAngleDim — Uç açısı için simetrik annotasyon (uç.jpg referansı)
+// İki çizgi tip noktasından sola: biri sol-yukarı, diğeri sol-aşağı. Aralarında yay + metin.
+function TipAngleDim({ cx, cy, halfRad, label, arcR = 10, lineLen = 16, id, offsets, setOffsets }) {
+  // Üst çizgi: sol-yukarı (taper üst yüzeyi boyunca)
+  const l1x = cx - lineLen * Math.cos(halfRad), l1y = cy - lineLen * Math.sin(halfRad);
+  // Alt çizgi: sol-aşağı (taper alt yüzeyi boyunca, simetrik)
+  const l2x = cx - lineLen * Math.cos(halfRad), l2y = cy + lineLen * Math.sin(halfRad);
+  // Yay: üst çizgiden alt çizgiye (CW)
+  const aSx = cx - arcR * Math.cos(halfRad), aSy = cy - arcR * Math.sin(halfRad);
+  const aEx = cx - arcR * Math.cos(halfRad), aEy = cy + arcR * Math.sin(halfRad);
+  // Metin: tip noktasının sağında
+  const textX = cx + arcR + 8;
+  const textY = cy;
+
+  const inner = (
+    <g fill="none" stroke="#e65100" strokeWidth={0.8}>
+      <line x1={cx} y1={cy} x2={l1x} y2={l1y} />
+      <line x1={cx} y1={cy} x2={l2x} y2={l2y} />
+      <path d={`M ${aSx} ${aSy} A ${arcR} ${arcR} 0 0 1 ${aEx} ${aEy}`} />
+      <text x={textX} y={textY} textAnchor="middle" dominantBaseline="central"
+        fontSize={6.5} fontFamily="'IBM Plex Mono', monospace" fill="#e65100" stroke="none" fontWeight="800">
+        {label}
+      </text>
+    </g>
+  );
   if (id && offsets && setOffsets) return <Draggable id={id} offsets={offsets} setOffsets={setOffsets}>{inner}</Draggable>;
   return inner;
 }
@@ -578,13 +606,13 @@ function SideView({ params, ox, oy, scale, dimOff, setDimOff }) {
       e.push(<path key="stp-tip" d={`M ${curX - tipDx0} ${oy - hr0} L ${curX} ${oy} L ${curX - tipDx0} ${oy + hr0}`}
         fill="none" stroke={DS.outline} strokeWidth={DS.oW} />);
 
-      // Point angle annotation — ISO arc style (flip=true: opens to LEFT from tip)
+      // Point angle annotation — simetrik uç açısı (TipAngleDim)
       if (params.showDimAngles) {
-        const halfRad0 = (ptAng0 / 2);
+        const halfRad0 = ptAng0 / 2;
+        const aR = Math.min(hr0 * 0.6, 10), lL = Math.min(hr0 * 1.0, 16);
         e.push(
-          <ArcAngleDim key="stp-pa0" cx={curX} cy={oy} aRad={halfRad0}
-            label={`${st0.angle}°`}
-            refDir={-1} below={false}
+          <TipAngleDim key="stp-pa0" cx={curX} cy={oy} halfRad={halfRad0}
+            label={`${st0.angle}°`} arcR={aR} lineLen={lL}
             id="stp-pa0" offsets={dimOff} setOffsets={setDimOff} />
         );
       }
@@ -626,13 +654,11 @@ function SideView({ params, ox, oy, scale, dimOff, setDimOff }) {
           <line key={`strans-b-${si}`} x1={curX} y1={oy + prevHR} x2={curX - transDx} y2={oy + hr} stroke={DS.outline} strokeWidth={DS.oW} />
         );
 
-        // Angle annotation — ISO arc style (corner at bottom-right of transition, opens LEFT)
+        // Angle annotation — köşe taper'ın sol-alt ucu (düz takımdaki sRight gibi)
         if (params.showDimAngles) {
-          const halfRad = ptAng / 2;
           e.push(
-            <ArcAngleDim key={`spa-${si}`} cx={curX} cy={oy + prevHR} aRad={halfRad}
-              label={`${st.angle}°`}
-              refDir={-1} below={true}
+            <ArcAngleDim key={`spa-${si}`} cx={curX - transDx} cy={oy + hr} aRad={ptAng / 2}
+              label={`${st.angle}°`} refDir={-1} below={true}
               id={`spa-${si}`} offsets={dimOff} setOffsets={setDimOff} />
           );
         }
@@ -692,13 +718,13 @@ function SideView({ params, ox, oy, scale, dimOff, setDimOff }) {
         stroke={DS.outline} strokeWidth={DS.oW * 0.7} />
     );
 
-    // Point angle annotation — ISO arc style at tip (flip=true: opens to LEFT)
+    // Point angle annotation — simetrik uç açısı
     if (params.showDimAngles) {
       const halfRad = ((params.pointAngle || 140) / 2) * Math.PI / 180;
+      const aR = Math.min(hD * 0.6, 10), lL = Math.min(hD * 1.0, 16);
       e.push(
-        <ArcAngleDim key="pt-ang" cx={tipR} cy={oy} aRad={halfRad}
-          label={`${params.pointAngle}°`}
-          refDir={-1} below={false}
+        <TipAngleDim key="pt-ang" cx={tipR} cy={oy} halfRad={halfRad}
+          label={`${params.pointAngle}°`} arcR={aR} lineLen={lL}
           id="pt-ang" offsets={dimOff} setOffsets={setDimOff} />
       );
     }
@@ -741,8 +767,8 @@ function SideView({ params, ox, oy, scale, dimOff, setDimOff }) {
       // Açı annotasyonu — ISO arc style
       if (params.showDimAngles) {
         e.push(
-          <ArcAngleDim key="ct-ang-lbl" cx={nRight} cy={oy + hN} aRad={cutAngleRad}
-            label={`${cutNeckAngle}°`} refDir={-1} below={true}
+          <ArcAngleDim key="ct-ang-lbl" cx={cLeft} cy={oy + hD} aRad={cutAngleRad}
+            label={`${cutNeckAngle}°`} refDir={1} below={true}
             id="ct-ang-lbl" offsets={dimOff} setOffsets={setDimOff} />
         );
       }
