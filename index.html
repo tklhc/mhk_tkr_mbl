@@ -2559,10 +2559,30 @@ function App() {
                 zip.file(`${name}.pdf`, pdfBlob);
               }
               const zipBlob = await zip.generateAsync({ type:'blob' });
-              const a = document.createElement('a');
-              a.href = URL.createObjectURL(zipBlob);
-              a.download = `mihenk-teknik-resimler-${new Date().toISOString().slice(0,10)}.zip`;
-              a.click(); URL.revokeObjectURL(a.href);
+              const fileName = `mihenk-teknik-resimler-${new Date().toISOString().slice(0,10)}.zip`;
+              if (window.showSaveFilePicker) {
+                try {
+                  const fh = await window.showSaveFilePicker({
+                    suggestedName: fileName,
+                    types: [{ description: 'ZIP Dosyası', accept: { 'application/zip': ['.zip'] } }]
+                  });
+                  const writable = await fh.createWritable();
+                  await writable.write(zipBlob);
+                  await writable.close();
+                } catch (e) {
+                  if (e.name !== 'AbortError') {
+                    const a = document.createElement('a');
+                    a.href = URL.createObjectURL(zipBlob);
+                    a.download = fileName;
+                    a.click(); URL.revokeObjectURL(a.href);
+                  }
+                }
+              } else {
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(zipBlob);
+                a.download = fileName;
+                a.click(); URL.revokeObjectURL(a.href);
+              }
             }}
               style={{ background:"#1a2a40", border:"none", borderRadius:3, padding:"3px 10px", color:"#fff", fontSize:9, cursor:"pointer", fontFamily:"var(--mono)", fontWeight:700, letterSpacing:0.5 }}>
               TOPLU PDF
