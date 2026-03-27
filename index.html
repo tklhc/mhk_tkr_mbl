@@ -245,7 +245,7 @@ const DEFAULT_PARAMS = {
   showDiml1: true,
   showDiml2: true,
   showDimNeck: true,
-  showDimHelix: true,
+  showDimHelix: false,
   showDimAngles: true,
   // Bottom block layout (%)
   bbWidth: 82,      // overall width %
@@ -346,50 +346,115 @@ function Draggable({ id, offsets, setOffsets, axis, children }) {
 
 function DimH({ x1, x2, y, label, tol, side = "bottom", offset = 7, dragId, offsets, setOffsets }) {
   const dir = side === "top" ? -1 : 1;
-  const yL = y + dir * offset;
-  const yT = yL + dir * 5.5;
+  const yBase = y + dir * offset;
+  // Read actual drag position so extension lines always connect to dim line
+  const dy = (offsets && dragId && offsets[dragId]) ? offsets[dragId].dy : 0;
+  const yActual = yBase + dy;
   const mid = (x1 + x2) / 2;
-  const a = 1.8;
+  const a = 2.0;
   if (Math.abs(x2 - x1) < 0.3) return null;
   const tolText = tol || "";
+  const yT = yBase + dir * 7.5;
+
+  // Only the dim line + arrows + text is draggable (positioned at yBase, drag adds dy)
   const inner = (
     <g fill={DC} stroke={DC} strokeWidth={DS.dim}>
-      <line x1={x1} y1={y + dir * 1.2} x2={x1} y2={yL + dir * 2} />
-      <line x1={x2} y1={y + dir * 1.2} x2={x2} y2={yL + dir * 2} />
-      <line x1={x1} y1={yL} x2={x2} y2={yL} />
-      <polygon points={`${x1},${yL} ${x1 + a},${yL - a * 0.35} ${x1 + a},${yL + a * 0.35}`} stroke="none" />
-      <polygon points={`${x2},${yL} ${x2 - a},${yL - a * 0.35} ${x2 - a},${yL + a * 0.35}`} stroke="none" />
+      <line x1={x1} y1={yBase} x2={x2} y2={yBase} />
+      <polygon points={`${x1},${yBase} ${x1+a},${yBase-a*0.35} ${x1+a},${yBase+a*0.35}`} stroke="none" />
+      <polygon points={`${x2},${yBase} ${x2-a},${yBase-a*0.35} ${x2-a},${yBase+a*0.35}`} stroke="none" />
       <text x={mid} y={yT} textAnchor="middle" dominantBaseline={side === "top" ? "auto" : "hanging"}
         fontSize={5.5} fontFamily="'IBM Plex Mono', monospace" fill={DC} stroke="none" fontWeight="700">{label}
         {tolText && <tspan fontSize={4.0} fill="#cc0000" fontWeight="700" dy={-1.5}> {tolText}</tspan>}
       </text>
     </g>
   );
-  if (dragId && offsets && setOffsets) return <Draggable id={dragId} offsets={offsets} setOffsets={setOffsets} axis="y">{inner}</Draggable>;
-  return inner;
+
+  return (
+    <g>
+      {/* Extension lines: always reach from tool edge to dim line — never detach */}
+      <line x1={x1} y1={y} x2={x1} y2={yActual + dir * 2} stroke={DC} strokeWidth={DS.dim} fill="none" />
+      <line x1={x2} y1={y} x2={x2} y2={yActual + dir * 2} stroke={DC} strokeWidth={DS.dim} fill="none" />
+      {dragId && offsets && setOffsets
+        ? <Draggable id={dragId} offsets={offsets} setOffsets={setOffsets} axis="y">{inner}</Draggable>
+        : inner}
+    </g>
+  );
 }
 
 function DimV({ y1, y2, x, label, tol, side = "left", offset = 6, dragId, offsets, setOffsets }) {
   const dir = side === "left" ? -1 : 1;
-  const xL = x + dir * offset;
-  const xT = xL + dir * 5;
+  const xBase = x + dir * offset;
+  const dx = (offsets && dragId && offsets[dragId]) ? offsets[dragId].dx : 0;
+  const xActual = xBase + dx;
   const mid = (y1 + y2) / 2;
-  const a = 1.8;
+  const a = 2.0;
   if (Math.abs(y2 - y1) < 0.3) return null;
   const tolText = tol || "";
+  const xT = xBase + dir * 7;
+
   const inner = (
     <g fill={DC} stroke={DC} strokeWidth={DS.dim}>
-      <line x1={x + dir * 1.2} y1={y1} x2={xL + dir * 2} y2={y1} />
-      <line x1={x + dir * 1.2} y1={y2} x2={xL + dir * 2} y2={y2} />
-      <line x1={xL} y1={y1} x2={xL} y2={y2} />
-      <polygon points={`${xL},${y1} ${xL - a * 0.35},${y1 + a} ${xL + a * 0.35},${y1 + a}`} stroke="none" />
-      <polygon points={`${xL},${y2} ${xL - a * 0.35},${y2 - a} ${xL + a * 0.35},${y2 - a}`} stroke="none" />
+      <line x1={xBase} y1={y1} x2={xBase} y2={y2} />
+      <polygon points={`${xBase},${y1} ${xBase-a*0.35},${y1+a} ${xBase+a*0.35},${y1+a}`} stroke="none" />
+      <polygon points={`${xBase},${y2} ${xBase-a*0.35},${y2-a} ${xBase+a*0.35},${y2-a}`} stroke="none" />
       <text x={xT} y={mid} textAnchor="middle" dominantBaseline="central"
         fontSize={5.5} fontFamily="'IBM Plex Mono', monospace" fill={DC} stroke="none" fontWeight="700"
         transform={`rotate(-90, ${xT}, ${mid})`}>{label}{tolText && <tspan fontSize={4.0} fill="#cc0000" fontWeight="700"> {tolText}</tspan>}</text>
     </g>
   );
-  if (dragId && offsets && setOffsets) return <Draggable id={dragId} offsets={offsets} setOffsets={setOffsets} axis="x">{inner}</Draggable>;
+
+  return (
+    <g>
+      {/* Extension lines: always reach from tool edge to dim line — never detach */}
+      <line x1={x} y1={y1} x2={xActual + dir * 2} y2={y1} stroke={DC} strokeWidth={DS.dim} fill="none" />
+      <line x1={x} y1={y2} x2={xActual + dir * 2} y2={y2} stroke={DC} strokeWidth={DS.dim} fill="none" />
+      {dragId && offsets && setOffsets
+        ? <Draggable id={dragId} offsets={offsets} setOffsets={setOffsets} axis="x">{inner}</Draggable>
+        : inner}
+    </g>
+  );
+}
+
+// ISO-style angle annotation: corner + two lines + arc + text (Image 3 reference style)
+// flip=false → lines go RIGHT (taper goes right from corner, e.g. shaft→neck)
+// flip=true  → lines go LEFT  (taper goes left from corner, e.g. drill tip, stepdrill)
+// ArcAngleDim — ISO tarzı açı annotasyonu (iki çizgi + yay + metin)
+// Tüm çizgiler köşe noktasından DIŞ TARAFA uzanır.
+//
+// refDir: referans çizgisinin yönü (+1=sağ, -1=sol)
+// below:  true  → yay AŞAĞI açılır (+y, takım dışına) — geçiş köşelerinde kullan
+//         false → yay YUKARI açılır (-y, takım dışına) — uç noktalarında kullan
+function ArcAngleDim({ cx, cy, aRad, label, arcR = 10, lineLen = 18, refDir = -1, below = true, id, offsets, setOffsets }) {
+  const yDir = below ? 1 : -1;
+  const sweep = below ? 1 : 0;   // CW=1(aşağı açık), CCW=0(yukarı açık)
+
+  // Referans çizgisi: yatay, refDir yönünde
+  const l1x = cx + refDir * lineLen, l1y = cy;
+  // Açı çizgisi: refDir yönünde + yDir yönünde eğimli
+  const l2x = cx + refDir * lineLen * Math.cos(aRad);
+  const l2y = cy + yDir  * lineLen * Math.sin(aRad);
+  // Yay noktaları
+  const aSx = cx + refDir * arcR, aSy = cy;
+  const aEx = cx + refDir * arcR * Math.cos(aRad);
+  const aEy = cy + yDir  * arcR  * Math.sin(aRad);
+  // Metin: orta açıda, biraz dışa ötelenmiş
+  const tDist = arcR + 9;
+  const textX = cx + refDir * tDist * Math.cos(aRad / 2);
+  const textY = cy + yDir  * tDist * Math.sin(aRad / 2);
+
+  const inner = (
+    <g fill="none" stroke="#e65100" strokeWidth={0.8}>
+      <line x1={cx} y1={cy} x2={l1x} y2={l1y} />
+      <line x1={cx} y1={cy} x2={l2x} y2={l2y} />
+      <path d={`M ${aSx} ${aSy} A ${arcR} ${arcR} 0 0 ${sweep} ${aEx} ${aEy}`} />
+      <text x={textX} y={textY} textAnchor="middle" dominantBaseline="central"
+        fontSize={6.5} fontFamily="'IBM Plex Mono', monospace" fill="#e65100" stroke="none" fontWeight="800">
+        {label}
+      </text>
+    </g>
+  );
+
+  if (id && offsets && setOffsets) return <Draggable id={id} offsets={offsets} setOffsets={setOffsets}>{inner}</Draggable>;
   return inner;
 }
 
@@ -462,16 +527,14 @@ function SideView({ params, ox, oy, scale, dimOff, setDimOff }) {
       <line key="tp-b" x1={sRight} y1={oy + hd} x2={tRight} y2={oy + hN} stroke={DS.outline} strokeWidth={DS.oW} />
     );
 
-    // Angle annotation
-    const angLblX = sRight + transDx * 0.5;
-    e.push(
-      <path key="ang-arc" d={`M ${sRight + 0.5} ${oy + hd - 0.5} L ${sRight + transDx * 0.35} ${oy + hd - (hd - hN) * 0.35}`}
-        fill="none" stroke="#e65100" strokeWidth={0.3} />,
-      <Draggable id="ang-lbl" offsets={dimOff} setOffsets={setDimOff}><text key="ang-lbl" x={angLblX + 1} y={oy + hd + 5}
-        fontSize={5.0} fontFamily="'IBM Plex Mono', monospace" fill="#e65100" fontWeight="700" textAnchor="middle">
-        {neckAngle}°
-      </text></Draggable>
-    );
+    // Angle annotation — ISO arc style
+    if (params.showDimAngles) {
+      e.push(
+        <ArcAngleDim key="ang-lbl" cx={sRight} cy={oy + hd} aRad={aRad}
+          label={`${neckAngle}°`} refDir={-1} below={true}
+          id="ang-lbl" offsets={dimOff} setOffsets={setDimOff} />
+      );
+    }
   } else if (l2 > 0 && Math.abs(hd - hN) > 0.2) {
     // 90° step if no meaningful angle
     e.push(
@@ -515,11 +578,14 @@ function SideView({ params, ox, oy, scale, dimOff, setDimOff }) {
       e.push(<path key="stp-tip" d={`M ${curX - tipDx0} ${oy - hr0} L ${curX} ${oy} L ${curX - tipDx0} ${oy + hr0}`}
         fill="none" stroke={DS.outline} strokeWidth={DS.oW} />);
 
-      // Point angle annotation — below tool
+      // Point angle annotation — ISO arc style (flip=true: opens to LEFT from tip)
       if (params.showDimAngles) {
+        const halfRad0 = (ptAng0 / 2);
         e.push(
-          <Draggable id="stp-pa0" offsets={dimOff} setOffsets={setDimOff}><text key="stp-pa0" x={curX - tipDx0 * 0.5} y={oy + hr0 + 5}
-            fontSize={5.0} fontFamily="'IBM Plex Mono', monospace" fill="#e65100" fontWeight="700">{st0.angle}°</text></Draggable>
+          <ArcAngleDim key="stp-pa0" cx={curX} cy={oy} aRad={halfRad0}
+            label={`${st0.angle}°`}
+            refDir={-1} below={false}
+            id="stp-pa0" offsets={dimOff} setOffsets={setDimOff} />
         );
       }
 
@@ -560,11 +626,14 @@ function SideView({ params, ox, oy, scale, dimOff, setDimOff }) {
           <line key={`strans-b-${si}`} x1={curX} y1={oy + prevHR} x2={curX - transDx} y2={oy + hr} stroke={DS.outline} strokeWidth={DS.oW} />
         );
 
-        // Angle annotation — below tool
+        // Angle annotation — ISO arc style (corner at bottom-right of transition, opens LEFT)
         if (params.showDimAngles) {
+          const halfRad = ptAng / 2;
           e.push(
-            <Draggable id={`spa-${si}`} offsets={dimOff} setOffsets={setDimOff}><text key={`spa-${si}`} x={curX - transDx * 0.5} y={oy + hr + 5}
-              fontSize={5.0} fontFamily="'IBM Plex Mono', monospace" fill="#e65100" fontWeight="700">{st.angle}°</text></Draggable>
+            <ArcAngleDim key={`spa-${si}`} cx={curX} cy={oy + prevHR} aRad={halfRad}
+              label={`${st.angle}°`}
+              refDir={-1} below={true}
+              id={`spa-${si}`} offsets={dimOff} setOffsets={setDimOff} />
           );
         }
 
@@ -623,13 +692,14 @@ function SideView({ params, ox, oy, scale, dimOff, setDimOff }) {
         stroke={DS.outline} strokeWidth={DS.oW * 0.7} />
     );
 
-    // Point angle annotation — below tool
+    // Point angle annotation — ISO arc style at tip (flip=true: opens to LEFT)
     if (params.showDimAngles) {
+      const halfRad = ((params.pointAngle || 140) / 2) * Math.PI / 180;
       e.push(
-        <Draggable id="pt-ang" offsets={dimOff} setOffsets={setDimOff}><text key="pt-ang" x={tipR - tipDx * 0.6} y={oy + hD + 5}
-          fontSize={5.0} fontFamily="'IBM Plex Mono', monospace" fill="#e65100" fontWeight="700">
-          {params.pointAngle}°
-        </text></Draggable>
+        <ArcAngleDim key="pt-ang" cx={tipR} cy={oy} aRad={halfRad}
+          label={`${params.pointAngle}°`}
+          refDir={-1} below={false}
+          id="pt-ang" offsets={dimOff} setOffsets={setDimOff} />
       );
     }
 
@@ -668,18 +738,12 @@ function SideView({ params, ox, oy, scale, dimOff, setDimOff }) {
         <line key="ct-t" x1={nRight} y1={oy - hN} x2={cLeft} y2={oy - hD} stroke={DS.outline} strokeWidth={DS.oW} />,
         <line key="ct-b" x1={nRight} y1={oy + hN} x2={cLeft} y2={oy + hD} stroke={DS.outline} strokeWidth={DS.oW} />
       );
-      // Açı annotasyonu
+      // Açı annotasyonu — ISO arc style
       if (params.showDimAngles) {
-        const angLblX2 = nRight + cutTransDx * 0.5;
         e.push(
-          <path key="ct-arc" d={`M ${nRight + 0.5} ${oy + hN - 0.5} L ${nRight + cutTransDx * 0.35} ${oy + hN + (hD - hN) * 0.35}`}
-            fill="none" stroke="#e65100" strokeWidth={0.3} />,
-          <Draggable id="ct-ang-lbl" offsets={dimOff} setOffsets={setDimOff}>
-            <text x={angLblX2} y={oy + hD + 6}
-              fontSize={5.0} fontFamily="'IBM Plex Mono', monospace" fill="#e65100" fontWeight="700" textAnchor="middle">
-              {cutNeckAngle}°
-            </text>
-          </Draggable>
+          <ArcAngleDim key="ct-ang-lbl" cx={nRight} cy={oy + hN} aRad={cutAngleRad}
+            label={`${cutNeckAngle}°`} refDir={-1} below={true}
+            id="ct-ang-lbl" offsets={dimOff} setOffsets={setDimOff} />
         );
       }
     } else {
@@ -730,27 +794,7 @@ function SideView({ params, ox, oy, scale, dimOff, setDimOff }) {
       );
     }
 
-    // Helix angle annotation — below tool
-    if (params.showDimHelix) {
-      const angArcR = Math.min(hD * 0.8, 8);
-      const angX = cLeft;
-      const angY = oy + hD;
-      const arcStartX = angX;
-      const arcStartY = angY - angArcR;
-      const arcEndX = angX + angArcR * Math.sin(hRad);
-      const arcEndY = angY - angArcR * Math.cos(hRad);
-      e.push(
-        <line key="hx-ref" x1={angX} y1={angY} x2={angX} y2={angY - angArcR - 2}
-          stroke="#2e7d32" strokeWidth={0.2} strokeDasharray="1.5,1" />,
-        <path key="hx-arc"
-          d={`M ${arcStartX} ${arcStartY} A ${angArcR} ${angArcR} 0 0 1 ${arcEndX} ${arcEndY}`}
-          fill="none" stroke="#2e7d32" strokeWidth={0.3} />,
-        <Draggable id="hx-lbl" offsets={dimOff} setOffsets={setDimOff}><text key="hx-lbl" x={angX + angArcR * 0.7 + 1} y={angY - angArcR * 0.3}
-          fontSize={5.0} fontFamily="'IBM Plex Mono', monospace" fill="#2e7d32" fontWeight="700">
-          {helix}° {isLeftHand ? "L" : "R"}
-        </text></Draggable>
-      );
-    }
+    // (Helis açısı görselden kaldırıldı)
   }
 
   // ── Core hidden lines ──
@@ -767,19 +811,22 @@ function SideView({ params, ox, oy, scale, dimOff, setDimOff }) {
   // ── DIMENSIONS (respect show/hide toggles) ──
   const dimBase = oy + Math.max(hD, hd);
 
-  // Total L
+  // Total L — use dimBase (spans full tool width), larger offset to clear all other dims
   if (params.showDimL) {
-    e.push(<DimH key="dL" x1={sLeft} x2={tipR} y={dimBase} label={`${L} mm`} tol={params.tolL} side="bottom" offset={toolType === "stepdrill" ? 6 + (params.steps || []).length * 7 + 7 : 14} dragId="dL" offsets={dimOff} setOffsets={setDimOff} />);
+    const lOffset = toolType === "stepdrill"
+      ? 6 + (params.steps || []).length * 7 + 7
+      : l2 > 0 ? 20 : 14;
+    e.push(<DimH key="dL" x1={sLeft} x2={tipR} y={dimBase} label={`${L} mm`} tol={params.tolL} side="bottom" offset={lOffset} dragId="dL" offsets={dimOff} setOffsets={setDimOff} />);
   }
-  
-  // Cutting l1 (skip for stepdrill) — matkap için uç açısı hariç silindirik kısım
+
+  // Cutting l1 (skip for stepdrill) — use oy+hD as y base (cutting section edge only)
   if (toolType !== "stepdrill" && params.showDiml1) {
     const l1x2 = toolType === "drill" ? tipR - tipDrillDx : tipR;
-    e.push(<DimH key="dl1" x1={cLeft} x2={l1x2} y={dimBase} label={`${l1} mm`} tol={params.toll1} side="bottom" offset={6} dragId="dl1" offsets={dimOff} setOffsets={setDimOff} />);
+    e.push(<DimH key="dl1" x1={cLeft} x2={l1x2} y={oy + hD} label={`${l1} mm`} tol={params.toll1} side="bottom" offset={6} dragId="dl1" offsets={dimOff} setOffsets={setDimOff} />);
   }
-  // Neck l2 (only the straight part)
+  // Neck l2 (only the straight part) — larger top offset to clear angle annotations
   if (l2 > 0 && params.showDiml2) {
-    e.push(<DimH key="dl2" x1={tRight} x2={nRight} y={oy - Math.max(hD, hd)} label={`${l2} mm`} tol={params.toll2} side="top" offset={5} dragId="dl2" offsets={dimOff} setOffsets={setDimOff} />);
+    e.push(<DimH key="dl2" x1={tRight} x2={nRight} y={oy - Math.max(hD, hd)} label={`${l2} mm`} tol={params.toll2} side="top" offset={12} dragId="dl2" offsets={dimOff} setOffsets={setDimOff} />);
   }
   // Cutting diameter (skip for stepdrill)
   if (toolType !== "stepdrill" && params.showDimD) {
@@ -1039,11 +1086,42 @@ function BottomBlock({ params, x, y, w, scaleText }) {
 
 // ─── INPUT COMPONENTS ───────────────────────────────────
 
+// Ortak uncontrolled sayı inputu — silme/yazma sorununu çözer
+function StepNumInput({ value, onChange, min, max, step = 1 }) {
+  const [raw, setRaw] = React.useState(String(value));
+  React.useEffect(() => { setRaw(String(value)); }, [value]);
+  const commit = (str) => {
+    const n = parseFloat(str);
+    if (!isNaN(n)) onChange(n);
+    else setRaw(String(value));
+  };
+  return (
+    <input type="number" value={raw} step={step} min={min} max={max}
+      onChange={(e) => setRaw(e.target.value)}
+      onBlur={(e) => commit(e.target.value)}
+      onKeyDown={(e) => { if (e.key === "Enter") commit(e.target.value); }}
+      onFocus={(e) => e.target.select()}
+      style={{ width: "100%", background: "var(--bg-surface)", border: "1px solid var(--border-mid)", borderRadius: 3, padding: "3px 4px", color: "var(--text-hi)", fontSize: 11, fontFamily: "var(--mono)", boxSizing: "border-box" }} />
+  );
+}
+
 function NI({ label, value, onChange, min, max, step = 1, unit = "mm", disabled }) {
+  const [raw, setRaw] = React.useState(String(value));
+  // Sync if parent changes value externally (e.g. batch nav, preset)
+  React.useEffect(() => { setRaw(String(value)); }, [value]);
+  const commit = (str) => {
+    const n = parseFloat(str);
+    if (!isNaN(n)) onChange(n);
+    else setRaw(String(value)); // revert if still empty on blur
+  };
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 4 }}>
       <label style={{ width: 100, fontSize: 10.5, color: "var(--text-mid)", flexShrink: 0, fontFamily: "var(--mono)" }}>{label}</label>
-      <input type="number" value={value} onChange={(e) => onChange(parseFloat(e.target.value) || 0)}
+      <input type="number" value={raw}
+        onChange={(e) => setRaw(e.target.value)}
+        onBlur={(e) => commit(e.target.value)}
+        onKeyDown={(e) => { if (e.key === "Enter") commit(e.target.value); }}
+        onFocus={(e) => e.target.select()}
         min={min} max={max} step={step} disabled={disabled}
         style={{
           flex: 1, maxWidth: 68, background: disabled ? "var(--bg-surface)" : "var(--bg-input)",
@@ -1069,10 +1147,21 @@ function TolInput({ value, onChange }) {
 }
 
 function NIT({ label, value, onChange, min, max, step = 1, unit = "mm", tolVal, onTolChange }) {
+  const [raw, setRaw] = React.useState(String(value));
+  React.useEffect(() => { setRaw(String(value)); }, [value]);
+  const commit = (str) => {
+    const n = parseFloat(str);
+    if (!isNaN(n)) onChange(n);
+    else setRaw(String(value));
+  };
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: 4 }}>
       <label style={{ width: 82, fontSize: 10.5, color: "var(--text-mid)", flexShrink: 0, fontFamily: "var(--mono)" }}>{label}</label>
-      <input type="number" value={value} onChange={(e) => onChange(parseFloat(e.target.value) || 0)}
+      <input type="number" value={raw}
+        onChange={(e) => setRaw(e.target.value)}
+        onBlur={(e) => commit(e.target.value)}
+        onKeyDown={(e) => { if (e.key === "Enter") commit(e.target.value); }}
+        onFocus={(e) => e.target.select()}
         min={min} max={max} step={step}
         style={{
           flex: 1, maxWidth: 58, background: "var(--bg-input)",
@@ -1298,9 +1387,8 @@ function Panel({ params, setParams, isMobile, showPanel, onClose }) {
                   {[["dia","⌀ ÇAP",0.1,0.5],["len","BOY",0.5,0.5],["angle","AÇI°",1,30]].map(([fld,lbl,stp,mn]) => (
                     <div key={fld} style={{ flex: 1 }}>
                       <label style={LBL}>{lbl}</label>
-                      <input type="number" value={st[fld]} step={stp} min={mn}
-                        onChange={(ev) => { const v = parseFloat(ev.target.value)||0; setParams(p => ({...p, steps: p.steps.map((s,i) => i===idx ? {...s,[fld]:v} : s)})); }}
-                        style={{ width: "100%", background: "var(--bg-surface)", border: "1px solid var(--border-mid)", borderRadius: 3, padding: "3px 4px", color: "var(--text-hi)", fontSize: 11, fontFamily: "var(--mono)", boxSizing: "border-box" }} />
+                      <StepNumInput value={st[fld]} step={stp} min={mn}
+                        onChange={(n) => setParams(p => ({...p, steps: p.steps.map((s,i) => i===idx ? {...s,[fld]:n} : s)}))} />
                     </div>
                   ))}
                 </div>
@@ -1335,7 +1423,7 @@ function Panel({ params, setParams, isMobile, showPanel, onClose }) {
         {/* RESİMDE GÖSTER */}
         {SH("Resimde Göster", "show", "◎")}
         {openSec.show && <div style={SB}>
-          {[["showDimD","⌀D Kesici Çap"],["showDimd","⌀d Sap Çapı"],["showDimL","L Toplam Boy"],["showDiml1","l₁ Kesici Boy"],["showDiml2","l₂ Boğaz Boyu"],["showDimNeck","⌀ Boğaz Çapı"],["showDimHelix","Helis Açısı"],["showDimAngles","Açılar / R"]].map(([key,lbl]) => (
+          {[["showDimD","⌀D Kesici Çap"],["showDimd","⌀d Sap Çapı"],["showDimL","L Toplam Boy"],["showDiml1","l₁ Kesici Boy"],["showDiml2","l₂ Boğaz Boyu"],["showDimNeck","⌀ Boğaz Çapı"],["showDimAngles","Açılar / R"]].map(([key,lbl]) => (
             <div key={key} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4, cursor: "pointer" }} onClick={() => u(key, !params[key])}>
               <div style={{ width: 13, height: 13, borderRadius: 2, flexShrink: 0, background: params[key] ? "var(--accent)" : "transparent", border: `1px solid ${params[key] ? "var(--accent)" : "var(--border-hi)"}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
                 {params[key] && <span style={{ fontSize: 8, color: "#000", fontWeight: 900, lineHeight: 1 }}>✓</span>}
