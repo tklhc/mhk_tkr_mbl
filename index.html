@@ -2464,73 +2464,107 @@ function App() {
               style={{ background: "#3a1a08", border: "none", borderRadius: 3, padding: "3px 10px", color: "#fff", fontSize: 9, cursor: "pointer", fontFamily: "var(--mono)", fontWeight: 700, letterSpacing: 0.5 }}>
               TOPLU PNG
             </button>
-            {/* Toplu PDF Export — ZIP */}
+            {/* Toplu PDF Export — ZIP, dialog yok */}
             <button onClick={async () => {
-              // Kütüphaneleri dinamik yükle
-              const loadScript = (src) => new Promise((res, rej) => {
-                if (document.querySelector(`script[src="${src}"]`)) return res();
-                const s = document.createElement('script');
-                s.src = src; s.onload = res; s.onerror = rej;
-                document.head.appendChild(s);
-              });
-              try {
-                await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
-                await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js');
-              } catch(e) { alert('Kütüphane yüklenemedi, internet bağlantısını kontrol edin.'); return; }
+              // JSZip yoksa yükle
+              if (!window.JSZip) {
+                await new Promise((res, rej) => {
+                  const s = document.createElement('script');
+                  s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
+                  s.onload = res; s.onerror = rej;
+                  document.head.appendChild(s);
+                });
+              }
 
-              const { jsPDF } = window.jspdf;
+              // Canvas → minimal tek sayfalık PDF Blob (jsPDF gereksiz)
+              function canvasToPdfBlob(canvas) {
+                return new Promise(resolve => {
+                  canvas.toBlob(imgBlob => {
+                    const fr = new FileReader();
+                    fr.onload = () => {
+                      const imgBytes = new Uint8Array(fr.result);
+                      // A4 landscape pt (1pt = 1/72 inch, 297x210mm)
+                      const pw = 841.89, ph = 595.28;
+                      const iw = canvas.width, ih = canvas.height;
+                      // fit image to page with 10pt margin
+                      const margin = 10;
+                      const maxW = pw - margin * 2, maxH = ph - margin * 2;
+                      const scale = Math.min(maxW / iw, maxH / ih);
+                      const dw = iw * scale, dh = ih * scale;
+                      const dx = (pw - dw) / 2, dy = (ph - dh) / 2;
+
+                      // Build PDF objects
+                      const enc = (s) => Array.from(new TextEncoder().encode(s));
+                      let buf = [], offsets = [];
+                      const add = (s) => { offsets.push(buf.length); buf.push(...enc(s)); };
+                      const addRaw = (arr) => { offsets.push(buf.length); buf.push(...arr); };
+
+                      // header
+                      buf.push(...enc('%PDF-1.4\n'));
+
+                      // obj 1: catalog
+                      add(`1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n`);
+                      // obj 2: pages
+                      add(`2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n`);
+                      // obj 3: page
+                      add(`3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${pw.toFixed(2)} ${ph.toFixed(2)}] /Contents 4 0 R /Resources << /XObject << /Im1 5 0 R >> >> >>\nendobj\n`);
+                      // obj 4: content stream
+                      const stream = `q ${dw.toFixed(2)} 0 0 ${dh.toFixed(2)} ${dx.toFixed(2)} ${(ph-dy-dh).toFixed(2)} cm /Im1 Do Q`;
+                      const streamBytes = new TextEncoder().encode(stream);
+                      add(`4 0 obj\n<< /Length ${streamBytes.length} >>\nstream\n`);
+                      buf.push(...streamBytes);
+                      buf.push(...enc('\nendstream\nendobj\n'));
+                      // obj 5: image XObject
+                      const imgHeader = `5 0 obj\n<< /Type /XObject /Subtype /Image /Width ${iw} /Height ${ih} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${imgBytes.length} >>\nstream\n`;
+                      offsets.push(buf.length);
+                      buf.push(...enc(imgHeader));
+                      buf.push(...imgBytes);
+                      buf.push(...enc('\nendstream\nendobj\n'));
+
+                      // xref
+                      const xrefOffset = buf.length;
+                      buf.push(...enc(`xref\n0 6\n0000000000 65535 f \n`));
+                      // offsets 1-5 (skip index 0 which is header)
+                      for (let k = 1; k <= 5; k++) {
+                        buf.push(...enc(String(offsets[k-1]).padStart(10,'0') + ' 00000 n \n'));
+                      }
+                      buf.push(...enc(`trailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF\n`));
+
+                      resolve(new Blob([new Uint8Array(buf)], { type: 'application/pdf' }));
+                    };
+                    fr.readAsArrayBuffer(imgBlob);
+                  }, 'image/jpeg', 0.92);
+                });
+              }
+
               const zip = new JSZip();
-
               for (let i = 0; i < batch.length; i++) {
                 setBatchIdx(i); setParams(p => ({ ...p, ...batch[i] })); setDimOff({});
                 await new Promise(r => setTimeout(r, 450));
-
-                const svgEl = document.getElementById('teknik-svg');
-                if (!svgEl) continue;
-                const clone = svgEl.cloneNode(true);
-                clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+                const svgEl = document.getElementById('teknik-svg'); if (!svgEl) continue;
+                const clone = svgEl.cloneNode(true); clone.setAttribute('xmlns','http://www.w3.org/2000/svg');
                 const svgData = new XMLSerializer().serializeToString(clone);
                 const vb = svgEl.viewBox.baseVal;
-
-                // SVG → Canvas
                 const canvas = document.createElement('canvas');
-                canvas.width = vb.width * 5; canvas.height = vb.height * 5;
+                canvas.width = vb.width * 4; canvas.height = vb.height * 4;
                 const ctx = canvas.getContext('2d');
-                await new Promise((resolve, reject) => {
+                await new Promise((res, rej) => {
                   const img = new Image();
-                  img.onload = () => {
-                    ctx.fillStyle = '#fff';
-                    ctx.fillRect(0, 0, canvas.width, canvas.height);
-                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                    resolve();
-                  };
-                  img.onerror = reject;
+                  img.onload = () => { ctx.fillStyle='#fff'; ctx.fillRect(0,0,canvas.width,canvas.height); ctx.drawImage(img,0,0,canvas.width,canvas.height); res(); };
+                  img.onerror = rej;
                   img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
                 });
-
-                // Canvas → PDF (A4 yatay)
-                const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
-                const pdfW = pdf.internal.pageSize.getWidth();
-                const pdfH = pdf.internal.pageSize.getHeight();
-                const aspect = canvas.width / canvas.height;
-                let iW = pdfW - 10, iH = iW / aspect;
-                if (iH > pdfH - 10) { iH = pdfH - 10; iW = iH * aspect; }
-                const ix = (pdfW - iW) / 2, iy = (pdfH - iH) / 2;
-                pdf.addImage(canvas.toDataURL('image/png'), 'PNG', ix, iy, iW, iH);
-
-                const name = (batch[i].toolName || ('takim-' + (i + 1))).replace(/[/\\?%*:|"<>]/g, '-');
-                zip.file(`${name}.pdf`, pdf.output('blob'));
-                await new Promise(r => setTimeout(r, 100));
+                const pdfBlob = await canvasToPdfBlob(canvas);
+                const name = (batch[i].toolName || ('takim-'+(i+1))).replace(/[/\\?%*:|"<>]/g,'-');
+                zip.file(`${name}.pdf`, pdfBlob);
               }
-
-              const zipBlob = await zip.generateAsync({ type: 'blob' });
+              const zipBlob = await zip.generateAsync({ type:'blob' });
               const a = document.createElement('a');
               a.href = URL.createObjectURL(zipBlob);
               a.download = `mihenk-teknik-resimler-${new Date().toISOString().slice(0,10)}.zip`;
-              a.click();
-              URL.revokeObjectURL(a.href);
+              a.click(); URL.revokeObjectURL(a.href);
             }}
-              style={{ background: "#1a2a40", border: "none", borderRadius: 3, padding: "3px 10px", color: "#fff", fontSize: 9, cursor: "pointer", fontFamily: "var(--mono)", fontWeight: 700, letterSpacing: 0.5 }}>
+              style={{ background:"#1a2a40", border:"none", borderRadius:3, padding:"3px 10px", color:"#fff", fontSize:9, cursor:"pointer", fontFamily:"var(--mono)", fontWeight:700, letterSpacing:0.5 }}>
               TOPLU PDF
             </button>
             <button onClick={() => { setBatch([]); setBatchIdx(0); }}
