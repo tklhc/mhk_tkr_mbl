@@ -347,14 +347,16 @@ function Draggable({ id, offsets, setOffsets, axis, children }) {
 function DimH({ x1, x2, y, label, tol, side = "bottom", offset = 7, dragId, offsets, setOffsets }) {
   const dir = side === "top" ? -1 : 1;
   const yBase = y + dir * offset;
-  // Read actual drag position so extension lines always connect to dim line
-  const dy = (offsets && dragId && offsets[dragId]) ? offsets[dragId].dy : 0;
-  const yActual = yBase + dy;
   const mid = (x1 + x2) / 2;
   const a = 2.0;
   if (Math.abs(x2 - x1) < 0.3) return null;
   const tolText = tol || "";
-  const yT = yBase + dir * 7.5;
+  // Drag offset'i oku — metin hangi tarafta olacağını belirle
+  const dy = (offsets && dragId && offsets[dragId]) ? offsets[dragId].dy : 0;
+  const yActual = yBase + dy;
+  // Metin her zaman çizginin dış tarafında (tool'dan uzak) — dinamik
+  const textDir = yActual >= y ? 1 : -1;
+  const yT = yBase + textDir * 7.5;
 
   // Only the dim line + arrows + text is draggable (positioned at yBase, drag adds dy)
   const inner = (
@@ -362,10 +364,11 @@ function DimH({ x1, x2, y, label, tol, side = "bottom", offset = 7, dragId, offs
       <line x1={x1} y1={yBase} x2={x2} y2={yBase} />
       <polygon points={`${x1},${yBase} ${x1+a},${yBase-a*0.35} ${x1+a},${yBase+a*0.35}`} stroke="none" />
       <polygon points={`${x2},${yBase} ${x2-a},${yBase-a*0.35} ${x2-a},${yBase+a*0.35}`} stroke="none" />
-      <text x={mid} y={yT} textAnchor="middle" dominantBaseline={side === "top" ? "auto" : "hanging"}
-        fontSize={5.5} fontFamily="'IBM Plex Mono', monospace" fill={DC} stroke="none" fontWeight="700">{label}
-        {tolText && <tspan fontSize={4.0} fill="#cc0000" fontWeight="700" dy={-1.5}> {tolText}</tspan>}
-      </text>
+      {/* Label ortada, tolerans label'ın sağında — bağımsız, kaymaz */}
+      <text x={mid} y={yT} textAnchor="middle" dominantBaseline={textDir < 0 ? "auto" : "hanging"}
+        fontSize={5.5} fontFamily="'IBM Plex Mono', monospace" fill={DC} stroke="none" fontWeight="700">{label}</text>
+      {tolText && <text x={mid + (label.length * 3.2)} y={yT} textAnchor="start" dominantBaseline={textDir < 0 ? "auto" : "hanging"}
+        fontSize={4.0} fontFamily="'IBM Plex Mono', monospace" fill="#cc0000" stroke="none" fontWeight="700">{tolText}</text>}
     </g>
   );
 
@@ -397,9 +400,13 @@ function DimV({ y1, y2, x, label, tol, side = "left", offset = 6, dragId, offset
       <line x1={xBase} y1={y1} x2={xBase} y2={y2} />
       <polygon points={`${xBase},${y1} ${xBase-a*0.35},${y1+a} ${xBase+a*0.35},${y1+a}`} stroke="none" />
       <polygon points={`${xBase},${y2} ${xBase-a*0.35},${y2-a} ${xBase+a*0.35},${y2-a}`} stroke="none" />
+      {/* Label ortada, tolerans label'ın sağında — rotate grubunda bağımsız */}
       <text x={xT} y={mid} textAnchor="middle" dominantBaseline="central"
         fontSize={5.5} fontFamily="'IBM Plex Mono', monospace" fill={DC} stroke="none" fontWeight="700"
-        transform={`rotate(-90, ${xT}, ${mid})`}>{label}{tolText && <tspan fontSize={4.0} fill="#cc0000" fontWeight="700"> {tolText}</tspan>}</text>
+        transform={`rotate(-90, ${xT}, ${mid})`}>{label}</text>
+      {tolText && <text x={xT + (label.length * 3.2)} y={mid} textAnchor="start" dominantBaseline="central"
+        fontSize={4.0} fontFamily="'IBM Plex Mono', monospace" fill="#cc0000" stroke="none" fontWeight="700"
+        transform={`rotate(-90, ${xT + (label.length * 3.2)}, ${mid})`}>{tolText}</text>}
     </g>
   );
 
