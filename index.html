@@ -384,7 +384,7 @@ function DimH({ x1, x2, y, label, tol, side = "bottom", offset = 7, dragId, offs
   );
 }
 
-function DimV({ y1, y2, x, label, tol, side = "left", offset = 6, dragId, offsets, setOffsets }) {
+function DimV({ y1, y2, x, label, tol, side = "left", offset = 6, textTop = false, dragId, offsets, setOffsets }) {
   const dir = side === "left" ? -1 : 1;
   const xBase = x + dir * offset;
   const dx = (offsets && dragId && offsets[dragId]) ? offsets[dragId].dx : 0;
@@ -400,13 +400,23 @@ function DimV({ y1, y2, x, label, tol, side = "left", offset = 6, dragId, offset
       <line x1={xBase} y1={y1} x2={xBase} y2={y2} />
       <polygon points={`${xBase},${y1} ${xBase-a*0.35},${y1+a} ${xBase+a*0.35},${y1+a}`} stroke="none" />
       <polygon points={`${xBase},${y2} ${xBase-a*0.35},${y2-a} ${xBase+a*0.35},${y2-a}`} stroke="none" />
-      {/* Label ortada, tolerans label'ın sağında — rotate grubunda bağımsız */}
-      <text x={xT} y={mid} textAnchor="middle" dominantBaseline="central"
-        fontSize={5.5} fontFamily="'IBM Plex Mono', monospace" fill={DC} stroke="none" fontWeight="700"
-        transform={`rotate(-90, ${xT}, ${mid})`}>{label}</text>
-      {tolText && <text x={xT + (label.length * 3.2)} y={mid} textAnchor="start" dominantBaseline="central"
-        fontSize={4.0} fontFamily="'IBM Plex Mono', monospace" fill="#cc0000" stroke="none" fontWeight="700"
-        transform={`rotate(-90, ${xT + (label.length * 3.2)}, ${mid})`}>{tolText}</text>}
+      {textTop ? (
+        // Yatay metin — üst okun yanında
+        <g>
+          <text x={xBase + 2} y={y1 - 2} textAnchor="start" dominantBaseline="auto"
+            fontSize={5.5} fontFamily="'IBM Plex Mono', monospace" fill={DC} stroke="none" fontWeight="700">{label}</text>
+          {tolText && <text x={xBase + 2 + label.length * 3.5} y={y1 - 2} textAnchor="start" dominantBaseline="auto"
+            fontSize={4.0} fontFamily="'IBM Plex Mono', monospace" fill="#cc0000" stroke="none" fontWeight="700">{tolText}</text>}
+        </g>
+      ) : (
+        // Döndürülmüş metin — orta, label + tolerans aynı rotate grubunda
+        <text x={xT} y={mid} textAnchor="middle" dominantBaseline="central"
+          fontSize={5.5} fontFamily="'IBM Plex Mono', monospace" fill={DC} stroke="none" fontWeight="700"
+          transform={`rotate(-90, ${xT}, ${mid})`}>
+          {label}
+          {tolText && <tspan fontSize={4.0} fill="#cc0000" fontWeight="700"> {tolText}</tspan>}
+        </text>
+      )}
     </g>
   );
 
