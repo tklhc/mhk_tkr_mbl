@@ -2464,6 +2464,27 @@ function App() {
               style={{ background: "#3a1a08", border: "none", borderRadius: 3, padding: "3px 10px", color: "#fff", fontSize: 9, cursor: "pointer", fontFamily: "var(--mono)", fontWeight: 700, letterSpacing: 0.5 }}>
               TOPLU PNG
             </button>
+            {/* Toplu PDF Export */}
+            <button onClick={async () => {
+              for (let i = 0; i < batch.length; i++) {
+                setBatchIdx(i); setParams(p => ({ ...p, ...batch[i] })); setDimOff({});
+                await new Promise(r => setTimeout(r, 400));
+                const svgEl = document.getElementById("teknik-svg"); if (!svgEl) continue;
+                const clone = svgEl.cloneNode(true); clone.setAttribute("width","100%"); clone.setAttribute("height","auto");
+                const svgData = new XMLSerializer().serializeToString(clone);
+                const name = batch[i].toolName || ("takim-" + (i + 1));
+                const win = window.open("", "_blank");
+                if (!win) continue;
+                win.document.write(`<!DOCTYPE html><html><head><title>MİHENK - ${name}</title><style>@page{size:A4 landscape;margin:8mm;}body{margin:0;display:flex;justify-content:center;align-items:center;min-height:100vh;background:#fff;}svg{max-width:100%;height:auto;}</style></head><body>${svgData}</body></html>`);
+                win.document.close();
+                await new Promise(r => setTimeout(r, 600));
+                win.print();
+                await new Promise(r => setTimeout(r, 400));
+              }
+            }}
+              style={{ background: "#1a2a40", border: "none", borderRadius: 3, padding: "3px 10px", color: "#fff", fontSize: 9, cursor: "pointer", fontFamily: "var(--mono)", fontWeight: 700, letterSpacing: 0.5 }}>
+              TOPLU PDF
+            </button>
             <button onClick={() => { setBatch([]); setBatchIdx(0); }}
               style={{ background: "transparent", border: "1px solid var(--red)", borderRadius: 3, padding: "2px 8px", color: "var(--red)", fontSize: 9, cursor: "pointer", fontFamily: "var(--mono)", fontWeight: 700 }}>✕</button>
           </div>
